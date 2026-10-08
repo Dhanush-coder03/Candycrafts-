@@ -95,9 +95,14 @@ export const AdminContactSettingsPage = () => {
       });
 
       if (res && res.success) {
+        if (res.data) {
+          updateContactInfo(res.data);
+        } else {
+          updateContactInfo(formData);
+        }
         setTestResult({
           success: true,
-          message: res.message || `SMTP verified! A test confirmation email was delivered to ${formData.ownerEmail}.`
+          message: res.message || `SMTP verified & saved to database! A test email was delivered to ${formData.ownerEmail}.`
         });
       } else {
         setTestResult({

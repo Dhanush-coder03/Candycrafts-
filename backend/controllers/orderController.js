@@ -42,10 +42,12 @@ exports.createOrder = async (req, res) => {
 
     const newOrder = await Order.create(orderData);
 
-    // Asynchronously attempt to send automated emails via Nodemailer if configured
-    sendOrderEmails(newOrder).catch(err => {
-      console.warn('Email dispatch non-blocking notice:', err.message);
-    });
+    // Send automated emails via Nodemailer if configured
+    try {
+      await sendOrderEmails(newOrder);
+    } catch (err) {
+      console.warn('Email dispatch notice:', err.message);
+    }
 
     res.status(201).json({
       success: true,

@@ -33,10 +33,12 @@ exports.createInquiry = async (req, res) => {
 
     const newInquiry = await Inquiry.create(inquiryData);
 
-    // Asynchronously trigger notification emails
-    sendInquiryEmails(newInquiry).catch(err => {
+    // Send notification emails
+    try {
+      await sendInquiryEmails(newInquiry);
+    } catch (err) {
       console.warn('Inquiry email notice:', err.message);
-    });
+    }
 
     res.status(201).json({
       success: true,

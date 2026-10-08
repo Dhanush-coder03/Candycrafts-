@@ -50,15 +50,32 @@ exports.updateContactInfo = async (req, res) => {
   }
 };
 
-// @desc    Test email configuration live
+// @desc    Test email configuration live & auto-save to database
 // @route   POST /api/contact/test-email
 exports.testEmailConfig = async (req, res) => {
   try {
     const { email, emailPass } = req.body;
     const result = await verifyAndTestEmail(email, emailPass);
+
+    // Automatically persist verified credentials to MongoDB
+    let contact = await ContactInfo.findOne();
+    if (!contact) {
+      contact = await ContactInfo.create({
+        ...DEFAULT_CONTACT_INFO,
+        email: email || DEFAULT_CONTACT_INFO.email,
+        ownerEmail: email || DEFAULT_CONTACT_INFO.ownerEmail,
+        emailPass: emailPass || ''
+      });
+    } else {
+      if (emailPass !== undefined) contact.emailPass = emailPass;
+      if (email) contact.ownerEmail = email;
+      await contact.save();
+    }
+
     res.json({
       success: true,
-      message: `✅ SMTP verified successfully! A test confirmation email was delivered to ${result.email}.`
+      message: `✅ SMTP verified & saved to database! A test email was delivered to ${result.email}.`,
+      data: contact
     });
   } catch (error) {
     res.status(400).json({

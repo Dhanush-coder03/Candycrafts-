@@ -330,6 +330,7 @@ const DEFAULT_CONTACT_INFO = {
   address: 'Craft Sanctuary 42, Blossom Lane, Heritage Cultural Quarter, New Delhi - 110001',
   email: 'candycraftssstudio@gmail.com',
   ownerEmail: 'candycraftssstudio@gmail.com',
+  emailPass: '',
   phone: '+91 98765 43210',
   hours: 'Monday – Saturday, 10:00 AM – 6:30 PM',
   instagramUrl: 'https://www.instagram.com/candycrafts2026?stkn=cTY2bnZ3M2Z0dHhy',

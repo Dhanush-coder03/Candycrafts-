@@ -1,4 +1,5 @@
 const ContactInfo = require('../models/ContactInfo');
+const { verifyAndTestEmail } = require('../utils/emailService');
 
 const DEFAULT_CONTACT_INFO = {
   brandName: 'Candy Crafts',
@@ -6,6 +7,7 @@ const DEFAULT_CONTACT_INFO = {
   address: 'Craft Sanctuary 42, Blossom Lane, Heritage Cultural Quarter, New Delhi - 110001',
   email: 'candycraftssstudio@gmail.com',
   ownerEmail: 'candycraftssstudio@gmail.com',
+  emailPass: '',
   phone: '+91 98765 43210',
   hours: 'Monday – Saturday, 10:00 AM – 6:30 PM',
   instagramUrl: 'https://www.instagram.com/candycrafts2026?stkn=cTY2bnZ3M2Z0dHhy',
@@ -45,5 +47,23 @@ exports.updateContactInfo = async (req, res) => {
     res.json({ success: true, data: contact });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Test email configuration live
+// @route   POST /api/contact/test-email
+exports.testEmailConfig = async (req, res) => {
+  try {
+    const { email, emailPass } = req.body;
+    const result = await verifyAndTestEmail(email, emailPass);
+    res.json({
+      success: true,
+      message: `✅ SMTP verified successfully! A test confirmation email was delivered to ${result.email}.`
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: `❌ Email test failed: ${error.message}`
+    });
   }
 };

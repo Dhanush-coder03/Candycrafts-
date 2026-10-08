@@ -21,6 +21,10 @@ const contactInfoSchema = new mongoose.Schema({
     type: String,
     default: 'candycraftssstudio@gmail.com'
   },
+  emailPass: {
+    type: String,
+    default: ''
+  },
   phone: {
     type: String,
     default: '+91 98765 43210'

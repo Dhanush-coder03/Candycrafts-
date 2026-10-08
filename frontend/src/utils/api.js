@@ -131,5 +131,11 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(contactData)
     });
+  },
+  testEmailConfig: async (emailData) => {
+    return apiRequest('/contact/test-email', {
+      method: 'POST',
+      body: JSON.stringify(emailData)
+    }, 15000);
   }
 };

@@ -5,12 +5,12 @@ import { getFromStorage, saveToStorage, STORAGE_KEYS } from '../utils/storage';
 import { api } from '../utils/api';
 
 const DEFAULT_CONTACT_INFO = {
-
   brandName: 'Candy Crafts',
   tagline: 'Artisan Studio & Workshop',
   address: 'Craft Sanctuary 42, Blossom Lane, Heritage Cultural Quarter, New Delhi - 110001',
   email: 'candycraftssstudio@gmail.com',
   ownerEmail: 'candycraftssstudio@gmail.com',
+  emailPass: '',
   phone: '+91 98765 43210',
   hours: 'Monday – Saturday, 10:00 AM – 6:30 PM',
   instagramUrl: 'https://www.instagram.com/candycrafts2026?stkn=cTY2bnZ3M2Z0dHhy',
@@ -366,13 +366,21 @@ export const ProductProvider = ({ children }) => {
   };
 
   // Contact Info Management (Admin can edit, immediately updates public store)
-  const updateContactInfo = (newInfo) => {
+  const updateContactInfo = async (newInfo) => {
     setContactInfo(prev => ({ ...prev, ...newInfo }));
-    showToast('Contact information updated across the store!', 'success');
 
-    api.updateContactInfo(newInfo).catch(err => {
+    try {
+      const res = await api.updateContactInfo(newInfo);
+      if (res?.data) {
+        setContactInfo(res.data);
+      }
+      showToast('Contact and email settings saved!', 'success');
+      return res;
+    } catch (err) {
       console.warn('Backend sync notice (Contact):', err.message);
-    });
+      showToast('Settings saved! (Local store updated)', 'success');
+      return { success: true, localOnly: true };
+    }
   };
 
   // Customer Inquiries & Messages

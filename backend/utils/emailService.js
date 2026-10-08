@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const mongoose = require('mongoose');
 const ContactInfo = require('../models/ContactInfo');
 
 /**
@@ -10,17 +11,19 @@ const getEmailCredentials = async () => {
   let ownerEmail = process.env.OWNER_EMAIL || user;
 
   try {
-    const contact = await ContactInfo.findOne();
-    if (contact) {
-      if (contact.emailPass && contact.emailPass.trim()) {
-        pass = contact.emailPass.trim().replace(/\s+/g, '');
-      }
-      if (contact.ownerEmail && contact.ownerEmail.trim()) {
-        ownerEmail = contact.ownerEmail.trim();
-        user = contact.ownerEmail.trim();
-      } else if (contact.email && contact.email.trim()) {
-        ownerEmail = contact.email.trim();
-        user = contact.email.trim();
+    if (mongoose.connection.readyState === 1) {
+      const contact = await ContactInfo.findOne();
+      if (contact) {
+        if (contact.emailPass && contact.emailPass.trim()) {
+          pass = contact.emailPass.trim().replace(/\s+/g, '');
+        }
+        if (contact.ownerEmail && contact.ownerEmail.trim()) {
+          ownerEmail = contact.ownerEmail.trim();
+          user = contact.ownerEmail.trim();
+        } else if (contact.email && contact.email.trim()) {
+          ownerEmail = contact.email.trim();
+          user = contact.email.trim();
+        }
       }
     }
   } catch (err) {

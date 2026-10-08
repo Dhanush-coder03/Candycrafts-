@@ -21,27 +21,25 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// CORS Configuration
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  process.env.CLIENT_URL
-].filter(Boolean);
+// Bulletproof CORS Configuration (Supports Vercel preview, production, and localhost)
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '*';
+  res.header('Access-Control-Allow-Origin', origin);
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, Postman)
-    if (!origin) return callback(null, true);
-    // Allow all vercel preview deployments or matched origins
-    if (origin.endsWith('.vercel.app') || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(null, true); // Permissive for easy dev & deployment
-  },
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 
 app.use(express.json({ limit: '10mb' }));

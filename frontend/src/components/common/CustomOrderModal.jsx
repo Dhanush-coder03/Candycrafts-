@@ -57,12 +57,6 @@ export const CustomOrderModal = () => {
     } catch {}
 
     showToast('Your custom craft inquiry has been sent! We will contact you soon.', 'success');
-
-    // Automatically trigger owner email mailto
-    const mailtoUrl = generateOwnerInquiryEmail(newInquiry, ownerEmail);
-    try {
-      window.location.href = mailtoUrl;
-    } catch {}
   };
 
   const handleResetAndClose = () => {
@@ -96,14 +90,14 @@ export const CustomOrderModal = () => {
             </div>
             
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-terracotta-600 bg-terracotta-50 px-3 py-1 rounded-full border border-terracotta-200 inline-block mb-1">
-                Enquiry Routed to Owner
+              <span className="text-[11px] font-bold uppercase tracking-wider text-sage-700 bg-sage-50 px-3 py-1 rounded-full border border-sage-200 inline-block mb-1">
+                ✓ Inquiry Received
               </span>
               <h3 className="font-serif text-2xl font-bold text-walnut-900">
                 Your custom craft inquiry has been sent! We will contact you soon.
               </h3>
               <p className="text-xs text-walnut-600 max-w-sm mx-auto leading-relaxed">
-                Thank you, {submittedInquiry.name}! An inquiry notification has been prepared for the store owner ({ownerEmail}) and a confirmation copy is ready for your email.
+                Thank you, <strong>{submittedInquiry.name}</strong>! An automated email notification has been dispatched to <strong>{ownerEmail}</strong>. Our studio team will call or message you on <strong>{submittedInquiry.phone}</strong> shortly!
               </p>
             </div>
 
@@ -124,44 +118,26 @@ export const CustomOrderModal = () => {
             </div>
 
             {/* Action buttons */}
-            <div className="space-y-2 pt-1">
-              <a
-                href={generateOwnerInquiryEmail(submittedInquiry, ownerEmail)}
-                className="w-full py-2.5 px-4 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-medium text-xs shadow-soft transition flex items-center justify-center gap-2"
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={handleResetAndClose}
+                className="w-full py-3.5 px-6 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-semibold text-sm shadow-soft transition active:scale-95 flex items-center justify-center gap-2"
               >
-                <Mail className="w-4 h-4" />
-                <span>Send Custom Request to Owner ({ownerEmail})</span>
-              </a>
-
-              {submittedInquiry.email && submittedInquiry.email !== 'candycraftssstudio@gmail.com' && (
-                <a
-                  href={generateCustomerInquiryConfirmationEmail(submittedInquiry, ownerEmail)}
-                  className="w-full py-2.5 px-4 rounded-full bg-cream-100 hover:bg-cream-200 text-walnut-800 font-medium text-xs border border-cream-300 transition flex items-center justify-center gap-2"
-                >
-                  <Mail className="w-4 h-4 text-terracotta-600" />
-                  <span>Send Confirmation to My Email ({submittedInquiry.email})</span>
-                </a>
-              )}
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Done & Continue Browsing</span>
+              </button>
 
               {contactInfo?.phone && (
                 <a
                   href={generateWhatsAppInquiryUrl(submittedInquiry, contactInfo.phone)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-2.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition flex items-center justify-center gap-2"
+                  className="w-full py-2.5 px-4 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium text-xs border border-emerald-200 transition flex items-center justify-center gap-2"
                 >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Send Request on WhatsApp</span>
+                  <MessageCircle className="w-4 h-4 text-emerald-600" />
+                  <span>Chat on WhatsApp (Optional)</span>
                 </a>
               )}
-
-              <button
-                type="button"
-                onClick={handleResetAndClose}
-                className="w-full py-2.5 px-4 rounded-full bg-white hover:bg-cream-100 text-walnut-600 text-xs font-semibold transition border border-cream-200"
-              >
-                Close Window
-              </button>
             </div>
           </div>
         ) : (

@@ -31,13 +31,14 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
   const [shippingAddress, setShippingAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [submittedOrder, setSubmittedOrder] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen || !product) return null;
 
   const ownerEmail = contactInfo?.ownerEmail || contactInfo?.email || 'candycraftssstudio@gmail.com';
   const totalPrice = (product.price || 0) * quantity;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!customerName.trim() || !customerPhone.trim() || !customerEmail.trim()) {
@@ -45,46 +46,45 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
       return;
     }
 
-    // 1. Save order query to persistent localStorage store (instantly visible in Admin Panel)
-    const newOrder = placeOrder({
-      customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
-      customerEmail: customerEmail.trim(),
-      shippingAddress: shippingAddress.trim() || 'To be confirmed on call',
-      notes: notes.trim(),
-      items: [
-        {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          quantity,
-          image: product.images?.[0] || 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=800&auto=format&fit=crop&q=80',
-          category: product.category
-        }
-      ],
-      totalAmount: totalPrice,
-      type: 'Direct Product Order Query'
-    });
+    setIsSubmitting(true);
 
-    setSubmittedOrder(newOrder);
-
-    // Confetti celebration
     try {
-      confetti({
-        particleCount: 90,
-        spread: 70,
-        origin: { y: 0.6 }
+      // 1. Save order query to persistent store (instantly visible in Admin Panel)
+      // and triggers backend Nodemailer email automatically in background
+      const newOrder = await placeOrder({
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerEmail: customerEmail.trim(),
+        shippingAddress: shippingAddress.trim() || 'To be confirmed on call',
+        notes: notes.trim(),
+        items: [
+          {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity,
+            image: product.images?.[0] || 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=800&auto=format&fit=crop&q=80',
+            category: product.category
+          }
+        ],
+        totalAmount: totalPrice,
+        type: 'Direct Product Order Query'
       });
-    } catch {
-      // safe fallback
-    }
 
-    // Automatically trigger Owner mailto link
-    const ownerMailto = generateOwnerOrderEmail(newOrder, ownerEmail);
-    try {
-      window.location.href = ownerMailto;
-    } catch {
-      // safe fallback
+      setSubmittedOrder(newOrder);
+
+      // Confetti celebration
+      try {
+        confetti({
+          particleCount: 90,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      } catch {}
+    } catch (err) {
+      console.error('Order query error:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -114,7 +114,7 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
                 {submittedOrder ? 'Order Query Confirmed' : 'Place Product Order Query'}
               </h3>
               <span className="text-xs text-walnut-500">
-                {submittedOrder ? 'Notification prepared for Studio Owner & You' : 'Direct artisan enquiry & fast studio response'}
+                {submittedOrder ? 'We have received your enquiry' : 'Direct artisan enquiry & fast studio response'}
               </span>
             </div>
           </div>
@@ -131,21 +131,21 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
         {/* Modal Content */}
         <div className="p-6 overflow-y-auto space-y-6">
           {submittedOrder ? (
-            /* Success View with exact requested notification */
+            /* Clean Success View - Automated email already sent */
             <div className="text-center space-y-5 py-2">
               <div className="w-16 h-16 rounded-full bg-sage-50 text-sage-600 border border-sage-200 flex items-center justify-center mx-auto animate-bounce">
                 <CheckCircle2 className="w-9 h-9" />
               </div>
 
               <div className="space-y-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-terracotta-600 bg-terracotta-50 px-3 py-1 rounded-full border border-terracotta-200 inline-block mb-1">
-                  Query Logged in Admin Panel
+                <span className="text-[11px] font-bold uppercase tracking-wider text-sage-700 bg-sage-50 px-3 py-1 rounded-full border border-sage-200 inline-block mb-1">
+                  ✓ Order Query Received
                 </span>
                 <h4 className="font-serif text-2xl font-bold text-walnut-900">
                   Your order query has been sent! We will contact you soon.
                 </h4>
                 <p className="text-xs text-walnut-600 max-w-md mx-auto leading-relaxed">
-                  Our artisan atelier has received your request. An order notification has been prepared for the store owner ({ownerEmail}) and a confirmation copy is ready for your Gmail.
+                  Thank you, <strong>{submittedOrder.customerName}</strong>! An automated email notification has been dispatched to <strong>{ownerEmail}</strong>, and a confirmation copy has been sent to your Gmail (<strong>{submittedOrder.customerEmail}</strong>). We will contact you at <strong>{submittedOrder.customerPhone}</strong> shortly!
                 </p>
               </div>
 
@@ -195,45 +195,27 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
                 </div>
               </div>
 
-              {/* Action Buttons: Owner Mail, Customer Mail, WhatsApp */}
+              {/* Action Buttons: Clean Done Button & Optional WhatsApp */}
               <div className="space-y-2 pt-2">
-                {/* 1. Send / Re-trigger mail to Owner */}
-                <a
-                  href={generateOwnerOrderEmail(submittedOrder, ownerEmail)}
-                  className="w-full py-3 px-4 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-medium text-xs shadow-soft transition flex items-center justify-center gap-2"
+                <button
+                  onClick={handleResetAndClose}
+                  className="w-full py-3.5 px-6 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-semibold text-sm shadow-soft transition active:scale-95 flex items-center justify-center gap-2"
                 >
-                  <Mail className="w-4 h-4" />
-                  <span>Send Order Query to Owner ({ownerEmail})</span>
-                </a>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Done & Continue Browsing</span>
+                </button>
 
-                {/* 2. Send confirmation to Customer */}
-                <a
-                  href={generateCustomerConfirmationEmail(submittedOrder, ownerEmail)}
-                  className="w-full py-2.5 px-4 rounded-full bg-cream-100 hover:bg-cream-200 text-walnut-800 font-medium text-xs border border-cream-300 transition flex items-center justify-center gap-2"
-                >
-                  <Mail className="w-4 h-4 text-terracotta-600" />
-                  <span>Send Confirmation to My Gmail ({submittedOrder.customerEmail})</span>
-                </a>
-
-                {/* 3. Send via WhatsApp */}
                 {contactInfo?.phone && (
                   <a
                     href={generateWhatsAppOrderUrl(submittedOrder, contactInfo.phone)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-2.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-4 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium text-xs border border-emerald-200 transition flex items-center justify-center gap-2"
                   >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>Send Order Query on WhatsApp</span>
+                    <MessageCircle className="w-4 h-4 text-emerald-600" />
+                    <span>Chat on WhatsApp (Optional)</span>
                   </a>
                 )}
-
-                <button
-                  onClick={handleResetAndClose}
-                  className="w-full py-2.5 px-4 rounded-full bg-white hover:bg-cream-100 text-walnut-600 text-xs font-semibold transition border border-cream-200"
-                >
-                  Close & Continue Browsing
-                </button>
               </div>
             </div>
           ) : (
@@ -371,10 +353,20 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-medium text-sm shadow-soft transition active:scale-95 flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="w-full py-3.5 rounded-full bg-terracotta-500 hover:bg-terracotta-600 disabled:bg-walnut-400 text-white font-medium text-sm shadow-soft transition active:scale-95 flex items-center justify-center gap-2"
               >
-                <ShoppingBag className="w-4 h-4" />
-                <span>Submit Order Query ({formatPrice(totalPrice)})</span>
+                {isSubmitting ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Submitting Order Query...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="w-4 h-4" />
+                    <span>Submit Order Query ({formatPrice(totalPrice)})</span>
+                  </>
+                )}
               </button>
 
             </form>

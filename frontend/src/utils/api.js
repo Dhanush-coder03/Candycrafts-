@@ -81,6 +81,12 @@ export const api = {
       body: JSON.stringify(categoryData)
     });
   },
+  updateCategory: async (id, categoryData) => {
+    return apiRequest(`/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(categoryData)
+    });
+  },
   deleteCategory: async (id) => {
     return apiRequest(`/categories/${id}`, { method: 'DELETE' });
   },

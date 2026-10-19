@@ -67,9 +67,8 @@ export const AdminAddProductPage = () => {
         description: formData.description.trim() || 'A delicately handcrafted piece designed with mindful passion and slow artistry.',
         images: images,
         featured: formData.featured,
-        available: formData.available,
-        rating: Number(formData.rating) || 5.0,
-        reviewsCount: 1,
+        rating: 0,
+        reviewsCount: 0,
         details: {
           materials: formData.materials || 'Artisanal paper, organic dyes, wire core, satin ribbon',
           dimensions: formData.dimensions || 'Standard handcrafted boutique dimensions',

@@ -473,6 +473,47 @@ export const ProductProvider = ({ children }) => {
     });
   };
 
+  const updateCategory = (id, updatedData) => {
+    let oldCategoryName = null;
+    setCategories(prev =>
+      prev.map(cat => {
+        if (cat.id === id || cat.slug === id) {
+          oldCategoryName = cat.name;
+          const slug = updatedData.name
+            ? updatedData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+            : cat.slug;
+          return { ...cat, ...updatedData, slug, updatedAt: new Date().toISOString() };
+        }
+        return cat;
+      })
+    );
+
+    // If category name changed, update all products that belong to old category
+    if (updatedData.name && oldCategoryName && updatedData.name !== oldCategoryName) {
+      setProducts(prev =>
+        prev.map(p => (p.category === oldCategoryName ? { ...p, category: updatedData.name } : p))
+      );
+    }
+
+    showToast(`Category updated successfully!`, 'success');
+
+    // Async sync to MongoDB
+    api.updateCategory(id, updatedData).catch(err => {
+      console.warn('Backend sync notice (Update Category):', err.message);
+    });
+  };
+
+  const deleteCategory = (id) => {
+    const toDelete = categories.find(c => c.id === id || c.slug === id);
+    setCategories(prev => prev.filter(c => c.id !== id && c.slug !== id));
+    showToast(toDelete ? `Category "${toDelete.name}" removed.` : 'Category removed.', 'info');
+
+    // Async sync to MongoDB
+    api.deleteCategory(id).catch(err => {
+      console.warn('Backend sync notice (Delete Category):', err.message);
+    });
+  };
+
   // Contact Info Management (Admin can edit, immediately updates public store)
   const updateContactInfo = async (newInfo) => {
     setContactInfo(prev => ({ ...prev, ...newInfo }));
@@ -598,6 +639,8 @@ export const ProductProvider = ({ children }) => {
         getProductById,
         getFeaturedProducts,
         addCategory,
+        updateCategory,
+        deleteCategory,
         updateContactInfo,
         addInquiry,
         deleteInquiry,

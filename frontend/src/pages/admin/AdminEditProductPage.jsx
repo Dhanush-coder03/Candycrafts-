@@ -21,7 +21,7 @@ export const AdminEditProductPage = () => {
     description: product?.description || '',
     featured: Boolean(product?.featured),
     available: product?.available !== undefined ? Boolean(product.available) : true,
-    rating: product?.rating || 5.0,
+    rating: product?.rating !== undefined ? product.rating : 0,
     materials: product?.details?.materials || '',
     dimensions: product?.details?.dimensions || '',
     craftTime: product?.details?.craftTime || '4-6 hours handcrafted',
@@ -78,7 +78,8 @@ export const AdminEditProductPage = () => {
         images: images,
         featured: formData.featured,
         available: formData.available,
-        rating: Number(formData.rating) || product.rating || 5.0,
+        rating: product.rating !== undefined ? product.rating : 0,
+        reviewsCount: product.reviewsCount !== undefined ? product.reviewsCount : 0,
         details: {
           materials: formData.materials,
           dimensions: formData.dimensions,

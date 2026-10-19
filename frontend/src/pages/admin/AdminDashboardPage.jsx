@@ -14,7 +14,8 @@ import {
   PhoneCall,
   Mail,
   ShoppingBag,
-  Phone
+  Phone,
+  Star
 } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { StatsCard } from '../../components/admin/StatsCard';
@@ -22,7 +23,7 @@ import { formatPrice, formatDate } from '../../utils/formatters';
 import { OrderDetailsModal } from '../../components/admin/OrderDetailsModal';
 
 export const AdminDashboardPage = () => {
-  const { products, categories, inquiries, orders = [], updateOrderStatus, deleteOrder, contactInfo, serverStatus } = useProducts();
+  const { products, categories, inquiries, orders = [], reviews = [], updateOrderStatus, deleteOrder, contactInfo, serverStatus } = useProducts();
 
   const [selectedOrder, setSelectedOrder] = useState(null);
 
@@ -34,6 +35,10 @@ export const AdminDashboardPage = () => {
   const pendingOrders = orders.filter(o => o.status === 'Pending').length;
   const unreadInquiries = inquiries.filter(i => !i.read).length;
 
+  const avgStoreRating = reviews.length > 0
+    ? (reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviews.length).toFixed(1)
+    : '0.0';
+
   const recentProducts = [...products]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .slice(0, 5);
@@ -43,6 +48,10 @@ export const AdminDashboardPage = () => {
     .slice(0, 4);
 
   const recentInquiries = [...inquiries]
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 4);
+
+  const recentReviews = [...reviews]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .slice(0, 4);
 
@@ -129,7 +138,7 @@ export const AdminDashboardPage = () => {
       </div>
 
       {/* Stats Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         <Link to="/admin/orders" className="block transform hover:-translate-y-0.5 transition">
           <StatsCard
             title="Customer Orders"
@@ -164,6 +173,15 @@ export const AdminDashboardPage = () => {
             subtitle={`${unreadInquiries} unread customer messages`}
             icon={MessageSquare}
             color="sage"
+          />
+        </Link>
+        <Link to="/admin/reviews" className="block transform hover:-translate-y-0.5 transition">
+          <StatsCard
+            title="Customer Reviews"
+            value={reviews.length}
+            subtitle={reviews.length > 0 ? `${avgStoreRating} ★ store average` : '0 patron reviews'}
+            icon={Star}
+            color="terracotta"
           />
         </Link>
       </div>
@@ -416,6 +434,64 @@ export const AdminDashboardPage = () => {
                     className="px-3 py-1 rounded-xl bg-cream-100 hover:bg-cream-200 text-walnut-700 text-xs font-semibold transition"
                   >
                     Open
+                  </Link>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Recent Customer Reviews Panel */}
+      <div className="bg-white rounded-3xl border border-cream-200 shadow-soft overflow-hidden">
+        <div className="p-6 border-b border-cream-200 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Star className="w-4 h-4 fill-amber-400" />
+            </div>
+            <div>
+              <h3 className="font-serif text-lg font-bold text-walnut-900">Recent Customer Reviews</h3>
+              <p className="text-xs text-walnut-500">Latest feedback & ratings left by store patrons</p>
+            </div>
+          </div>
+          <Link
+            to="/admin/reviews"
+            className="text-xs font-semibold text-terracotta-600 hover:text-terracotta-700 flex items-center gap-1"
+          >
+            <span>View All ({reviews.length})</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="divide-y divide-cream-100">
+          {recentReviews.length === 0 ? (
+            <div className="p-8 text-center text-xs text-walnut-400">
+              No customer reviews submitted yet. When customers post reviews, they will display here.
+            </div>
+          ) : (
+            recentReviews.map((rev) => (
+              <div key={rev.id || rev._id} className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-cream-50/40 transition">
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-walnut-900 text-xs sm:text-sm">{rev.customerName}</span>
+                    <span className="text-[11px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                      {rev.rating}★
+                    </span>
+                    <span className="text-xs text-walnut-500 font-serif truncate max-w-[200px]">
+                      on {rev.productName}
+                    </span>
+                  </div>
+                  <p className="text-xs text-walnut-600 line-clamp-1">"{rev.comment}"</p>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-[11px] text-walnut-400 hidden sm:inline">{formatDate(rev.createdAt)}</span>
+                  <Link
+                    to="/admin/reviews"
+                    className="px-3 py-1 rounded-xl bg-cream-100 hover:bg-cream-200 text-walnut-700 text-xs font-semibold transition"
+                  >
+                    Moderate
                   </Link>
                 </div>
               </div>

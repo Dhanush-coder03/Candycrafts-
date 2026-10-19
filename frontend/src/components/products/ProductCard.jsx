@@ -64,10 +64,18 @@ export const ProductCard = ({ product }) => {
             <span className="uppercase tracking-wider font-semibold text-[11px] text-terracotta-600">
               {product.category}
             </span>
-            <div className="flex items-center gap-1 text-amber-500 font-medium">
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-              <span>{product.rating || '4.9'}</span>
-            </div>
+            {product.reviewsCount > 0 ? (
+              <div className="flex items-center gap-1 text-amber-500 font-medium">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                <span>{product.rating ? Number(product.rating).toFixed(1) : '5.0'}</span>
+                <span className="text-[11px] text-walnut-400 font-normal">({product.reviewsCount})</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-walnut-400 text-[11px]">
+                <Star className="w-3 h-3 text-cream-300" />
+                <span>0 reviews</span>
+              </div>
+            )}
           </div>
 
           {/* Title */}

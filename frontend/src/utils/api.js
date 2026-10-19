@@ -137,5 +137,22 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(emailData)
     }, 15000);
+  },
+
+  // Customer Reviews
+  getReviews: async () => {
+    return apiRequest('/reviews', { method: 'GET' });
+  },
+  getProductReviews: async (productId) => {
+    return apiRequest(`/products/${productId}/reviews`, { method: 'GET' });
+  },
+  createReview: async (productId, reviewData) => {
+    return apiRequest(`/products/${productId}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(reviewData)
+    });
+  },
+  deleteReview: async (id) => {
+    return apiRequest(`/reviews/${id}`, { method: 'DELETE' });
   }
 };

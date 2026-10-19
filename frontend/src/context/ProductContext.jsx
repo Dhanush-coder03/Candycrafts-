@@ -145,6 +145,14 @@ export const ProductProvider = ({ children }) => {
     return INITIAL_ORDERS;
   });
 
+  // Load Customer Reviews (Starts at 0 / empty [] with zero dummy data)
+  const [reviews, setReviews] = useState(() => {
+    const saved = getFromStorage(STORAGE_KEYS.REVIEWS, null);
+    if (saved && Array.isArray(saved)) return saved;
+    saveToStorage(STORAGE_KEYS.REVIEWS, []);
+    return [];
+  });
+
   // Toast state
   const [toast, setToast] = useState(null);
 
@@ -191,6 +199,10 @@ export const ProductProvider = ({ children }) => {
           api.getContactInfo().then(r => {
             if (r?.data) setContactInfo(r.data);
           }).catch(() => {});
+
+          api.getReviews().then(r => {
+            if (r?.data && Array.isArray(r.data)) setReviews(r.data);
+          }).catch(() => {});
         }
       })
       .catch(() => {
@@ -199,6 +211,27 @@ export const ProductProvider = ({ children }) => {
 
     return () => { isMounted = false; };
   }, []);
+
+  // Ensure products calculate rating & count dynamically from actual reviews
+  useEffect(() => {
+    setProducts(prev => {
+      let changed = false;
+      const updated = prev.map(p => {
+        const prodReviews = reviews.filter(r => r.productId === p.id || r.productId === p._id);
+        const count = prodReviews.length;
+        const avg = count > 0
+          ? Number((prodReviews.reduce((sum, r) => sum + Number(r.rating), 0) / count).toFixed(1))
+          : 0;
+
+        if (p.reviewsCount !== count || p.rating !== avg) {
+          changed = true;
+          return { ...p, rating: avg, reviewsCount: count };
+        }
+        return p;
+      });
+      return changed ? updated : prev;
+    });
+  }, [reviews]);
 
   // Sync products back to localStorage on change
   useEffect(() => {
@@ -225,6 +258,11 @@ export const ProductProvider = ({ children }) => {
     saveToStorage(STORAGE_KEYS.ORDERS, orders);
   }, [orders]);
 
+  // Sync reviews to localStorage
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.REVIEWS, reviews);
+  }, [reviews]);
+
   // Listen to cross-tab storage changes
   useEffect(() => {
     const handleStorageChange = (e) => {
@@ -249,6 +287,20 @@ export const ProductProvider = ({ children }) => {
           console.error(err);
         }
       }
+      if (e.key === STORAGE_KEYS.ORDERS && e.newValue) {
+        try {
+          setOrders(JSON.parse(e.newValue));
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      if (e.key === STORAGE_KEYS.REVIEWS && e.newValue) {
+        try {
+          setReviews(JSON.parse(e.newValue));
+        } catch (err) {
+          console.error(err);
+        }
+      }
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
@@ -260,8 +312,8 @@ export const ProductProvider = ({ children }) => {
       ...productData,
       id: `product_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       createdAt: new Date().toISOString(),
-      rating: productData.rating || 5.0,
-      reviewsCount: productData.reviewsCount || 1,
+      rating: productData.rating || 0,
+      reviewsCount: productData.reviewsCount || 0,
       available: productData.available !== undefined ? productData.available : true,
       featured: productData.featured !== undefined ? productData.featured : false,
       images: productData.images && productData.images.length > 0
@@ -329,15 +381,71 @@ export const ProductProvider = ({ children }) => {
     );
   };
 
+  // Customer Review Management
+  const addReview = async (productId, reviewData) => {
+    const product = products.find(p => p.id === productId || p._id === productId);
+    const targetProductId = product ? product.id : productId;
+    const targetProductName = product ? product.name : (reviewData.productName || 'Artisan Craft');
+
+    const newReview = {
+      id: `rev_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      _id: `rev_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      productId: targetProductId,
+      productName: targetProductName,
+      customerName: reviewData.customerName?.trim() || 'Valued Patron',
+      rating: Number(reviewData.rating) || 5,
+      comment: reviewData.comment?.trim() || '',
+      createdAt: new Date().toISOString()
+    };
+
+    setReviews(prev => [newReview, ...prev]);
+    showToast('Thank you! Your customer review has been added.', 'success');
+
+    // Async sync to MongoDB
+    api.createReview(targetProductId, {
+      customerName: newReview.customerName,
+      rating: newReview.rating,
+      comment: newReview.comment,
+      productName: targetProductName
+    }).then(res => {
+      if (res?.data?._id) {
+        // Update review with real Mongo _id if available
+        setReviews(prev => prev.map(r => r.id === newReview.id ? { ...r, _id: res.data._id } : r));
+      }
+    }).catch(err => {
+      console.warn('Backend sync notice (Create Review):', err.message);
+    });
+
+    return newReview;
+  };
+
+  const deleteReview = (reviewId) => {
+    const toDelete = reviews.find(r => r.id === reviewId || r._id === reviewId);
+    setReviews(prev => prev.filter(r => r.id !== reviewId && r._id !== reviewId));
+    showToast('Customer review removed.', 'info');
+
+    if (toDelete) {
+      api.deleteReview(toDelete._id || toDelete.id).catch(err => {
+        console.warn('Backend sync notice (Delete Review):', err.message);
+      });
+    }
+  };
+
+  const getProductReviews = (productId) => {
+    return reviews.filter(r => r.productId === productId);
+  };
+
   const resetToDefaultData = () => {
     setProducts(INITIAL_PRODUCTS);
     setCategories(INITIAL_CATEGORIES);
     setContactInfo(DEFAULT_CONTACT_INFO);
     setInquiries(INITIAL_INQUIRIES);
+    setReviews([]);
     saveToStorage(STORAGE_KEYS.PRODUCTS, INITIAL_PRODUCTS);
     saveToStorage(STORAGE_KEYS.CATEGORIES, INITIAL_CATEGORIES);
     saveToStorage(STORAGE_KEYS.CONTACT_INFO, DEFAULT_CONTACT_INFO);
     saveToStorage(STORAGE_KEYS.INQUIRIES, INITIAL_INQUIRIES);
+    saveToStorage(STORAGE_KEYS.REVIEWS, []);
     showToast('Store reset to initial curated handmade catalog!', 'info');
   };
 
@@ -496,7 +604,11 @@ export const ProductProvider = ({ children }) => {
         toggleInquiryRead,
         placeOrder,
         updateOrderStatus,
-        deleteOrder
+        deleteOrder,
+        reviews,
+        addReview,
+        deleteReview,
+        getProductReviews
       }}
     >
       {children}

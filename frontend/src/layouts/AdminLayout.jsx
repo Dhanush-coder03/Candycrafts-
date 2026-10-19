@@ -24,6 +24,8 @@ export const AdminLayout = () => {
     pageTitle = "Studio Contact Information Settings";
   } else if (location.pathname.includes('/admin/inquiries')) {
     pageTitle = "Customer Messages & Inquiries";
+  } else if (location.pathname.includes('/admin/reviews')) {
+    pageTitle = "Customer Reviews & Moderation";
   }
 
   return (

@@ -10,6 +10,7 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const inquiryRoutes = require('./routes/inquiryRoutes');
 const contactRoutes = require('./routes/contactRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.get('/', (req, res) => {
       '/api/orders',
       '/api/inquiries',
       '/api/contact',
+      '/api/reviews',
       '/api/health'
     ]
   });
@@ -79,6 +81,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/inquiries', inquiryRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // 404 Handler
 app.use((req, res) => {

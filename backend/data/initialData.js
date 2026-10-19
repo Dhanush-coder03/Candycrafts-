@@ -76,8 +76,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 4.9,
-    reviewsCount: 42
+    rating: 0,
+    reviewsCount: 0
   },
   {
     id: "product_002",
@@ -99,8 +99,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 5.0,
-    reviewsCount: 57
+    rating: 0,
+    reviewsCount: 0
   },
   {
     id: "product_003",
@@ -121,8 +121,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 4.8,
-    reviewsCount: 29
+    rating: 0,
+    reviewsCount: 0
   },
   {
     id: "product_004",
@@ -143,8 +143,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: false,
     available: true,
-    rating: 4.9,
-    reviewsCount: 31
+    rating: 0,
+    reviewsCount: 0
   },
   {
     id: "product_005",
@@ -165,8 +165,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 4.9,
-    reviewsCount: 48
+    rating: 0,
+    reviewsCount: 0
   },
   {
     id: "product_006",
@@ -187,8 +187,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 5.0,
-    reviewsCount: 64
+    rating: 0,
+    reviewsCount: 0
   },
   {
     id: "product_007",
@@ -209,8 +209,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 4.9,
-    reviewsCount: 36
+    rating: 0,
+    reviewsCount: 0
   },
   {
     id: "product_008",
@@ -231,8 +231,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 5.0,
-    reviewsCount: 52
+    rating: 0,
+    reviewsCount: 0
   },
   {
     id: "product_009",
@@ -253,8 +253,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: false,
     available: true,
-    rating: 4.8,
-    reviewsCount: 22
+    rating: 0,
+    reviewsCount: 0
   },
   {
     id: "product_010",
@@ -275,8 +275,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 4.9,
-    reviewsCount: 39
+    rating: 0,
+    reviewsCount: 0
   },
   {
     id: "product_011",
@@ -297,8 +297,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: false,
     available: true,
-    rating: 4.9,
-    reviewsCount: 34
+    rating: 0,
+    reviewsCount: 0
   },
   {
     id: "product_012",
@@ -319,8 +319,8 @@ const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 5.0,
-    reviewsCount: 47
+    rating: 0,
+    reviewsCount: 0
   }
 ];
 

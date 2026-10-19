@@ -11,12 +11,13 @@ import {
   Store, 
   Sparkles, 
   RefreshCw,
-  X
+  X,
+  Star
 } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 
 export const AdminSidebar = ({ mobileOpen, setMobileOpen }) => {
-  const { resetToDefaultData, products, inquiries, orders = [] } = useProducts();
+  const { resetToDefaultData, products, inquiries, orders = [], reviews = [] } = useProducts();
 
   const unreadCount = inquiries?.filter(i => !i.read).length || 0;
   const pendingOrdersCount = orders?.filter(o => o.status === 'Pending').length || 0;
@@ -36,6 +37,13 @@ export const AdminSidebar = ({ mobileOpen, setMobileOpen }) => {
   ];
 
   const communicationItems = [
+    { 
+      name: 'Customer Reviews', 
+      path: '/admin/reviews', 
+      icon: Star, 
+      badge: reviews.length > 0 ? reviews.length : undefined,
+      badgeStyle: 'bg-amber-500 text-white'
+    },
     { name: 'Contact Info', path: '/admin/contact', icon: PhoneCall },
     { 
       name: 'Customer Inquiries', 

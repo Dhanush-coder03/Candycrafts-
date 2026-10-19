@@ -19,8 +19,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 4.9,
-    reviewsCount: 42,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-01T10:00:00.000Z"
   },
   {
@@ -43,8 +43,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 5.0,
-    reviewsCount: 57,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-02T11:00:00.000Z"
   },
   {
@@ -66,8 +66,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 4.8,
-    reviewsCount: 29,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-03T12:00:00.000Z"
   },
   {
@@ -89,8 +89,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: false,
     available: true,
-    rating: 4.9,
-    reviewsCount: 31,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-04T13:00:00.000Z"
   },
   {
@@ -112,8 +112,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 4.9,
-    reviewsCount: 48,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-05T14:00:00.000Z"
   },
   {
@@ -135,8 +135,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 5.0,
-    reviewsCount: 64,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-06T15:00:00.000Z"
   },
   {
@@ -158,8 +158,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 4.9,
-    reviewsCount: 36,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-07T16:00:00.000Z"
   },
   {
@@ -181,8 +181,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 5.0,
-    reviewsCount: 52,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-08T17:00:00.000Z"
   },
   {
@@ -204,8 +204,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: false,
     available: true,
-    rating: 4.8,
-    reviewsCount: 22,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-09T18:00:00.000Z"
   },
   {
@@ -227,8 +227,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 4.9,
-    reviewsCount: 39,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-10T19:00:00.000Z"
   },
   {
@@ -250,8 +250,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: false,
     available: true,
-    rating: 4.9,
-    reviewsCount: 34,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-11T20:00:00.000Z"
   },
   {
@@ -273,8 +273,8 @@ export const INITIAL_PRODUCTS = [
     ],
     featured: true,
     available: true,
-    rating: 5.0,
-    reviewsCount: 47,
+    rating: 0,
+    reviewsCount: 0,
     createdAt: "2026-03-12T21:00:00.000Z"
   }
 ];

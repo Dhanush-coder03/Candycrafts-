@@ -9,7 +9,8 @@ export const STORAGE_KEYS = {
   WISHLIST: 'craft_wishlist',
   INQUIRIES: 'craft_inquiries',
   CONTACT_INFO: 'craft_contact_info',
-  ORDERS: 'craft_orders'
+  ORDERS: 'craft_orders',
+  REVIEWS: 'craft_reviews'
 };
 
 export const getFromStorage = (key, fallback = null) => {

@@ -23,6 +23,7 @@ import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
 import { AdminContactSettingsPage } from './pages/admin/AdminContactSettingsPage';
 import { AdminInquiriesPage } from './pages/admin/AdminInquiriesPage';
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
+import { AdminReviewsPage } from './pages/admin/AdminReviewsPage';
 
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
               <Route path="categories" element={<AdminCategoriesPage />} />
               <Route path="contact" element={<AdminContactSettingsPage />} />
               <Route path="inquiries" element={<AdminInquiriesPage />} />
+              <Route path="reviews" element={<AdminReviewsPage />} />
             </Route>
 
             {/* Fallback route */}

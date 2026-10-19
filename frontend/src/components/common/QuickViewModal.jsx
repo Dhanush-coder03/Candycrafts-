@@ -79,12 +79,20 @@ export const QuickViewModal = () => {
                 {[...Array(5)].map((_, i) => (
                   <Star 
                     key={i} 
-                    className={`w-4 h-4 ${i < Math.floor(product.rating || 5) ? 'fill-amber-400 text-amber-400' : 'text-cream-300'}`} 
+                    className={`w-4 h-4 ${
+                      product.reviewsCount > 0 && i < Math.round(product.rating || 0)
+                        ? 'fill-amber-400 text-amber-400'
+                        : 'text-cream-300'
+                    }`} 
                   />
                 ))}
               </div>
               <span className="text-xs text-walnut-500 font-medium">
-                {product.rating || '4.9'} ({product.reviewsCount || 12} artisan reviews)
+                {product.reviewsCount > 0 ? (
+                  `${Number(product.rating || 0).toFixed(1)} (${product.reviewsCount} customer ${product.reviewsCount === 1 ? 'review' : 'reviews'})`
+                ) : (
+                  '0 customer reviews yet'
+                )}
               </span>
             </div>
 

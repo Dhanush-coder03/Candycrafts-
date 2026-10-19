@@ -15,6 +15,7 @@ import {
 import { useProducts } from '../context/ProductContext';
 import { ProductCard } from '../components/products/ProductCard';
 import { ProductOrderModal } from '../components/products/ProductOrderModal';
+import { ProductReviewsSection } from '../components/products/ProductReviewsSection';
 import { formatPrice } from '../utils/formatters';
 
 export const ProductDetailsPage = () => {
@@ -139,19 +140,34 @@ export const ProductDetailsPage = () => {
             </h1>
 
             {/* Rating & Reviews */}
-            <div className="flex items-center gap-2 mb-4">
+            <a
+              href="#reviews-section"
+              className="inline-flex items-center gap-2.5 mb-4 group cursor-pointer hover:opacity-90 transition"
+              title="Jump to Customer Reviews"
+            >
               <div className="flex items-center text-amber-500">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`w-4 h-4 ${i < Math.floor(product.rating || 5) ? 'fill-amber-400 text-amber-400' : 'text-cream-300'}`}
+                    className={`w-4 h-4 ${
+                      product.reviewsCount > 0 && i < Math.round(product.rating)
+                        ? 'fill-amber-400 text-amber-400'
+                        : 'text-cream-300'
+                    }`}
                   />
                 ))}
               </div>
-              <span className="text-xs text-walnut-500 font-medium">
-                {product.rating || '4.9'} ({product.reviewsCount || 34} verified patron reviews)
+              <span className="text-xs text-walnut-500 font-medium group-hover:text-terracotta-600 transition">
+                {product.reviewsCount > 0 ? (
+                  <>
+                    <span className="font-bold text-walnut-900">{product.rating.toFixed(1)}</span> (
+                    {product.reviewsCount} {product.reviewsCount === 1 ? 'verified review' : 'verified reviews'})
+                  </>
+                ) : (
+                  <span>No customer reviews yet (0) • <span className="underline text-terracotta-600 font-semibold">Be the first to review</span></span>
+                )}
               </span>
-            </div>
+            </a>
 
             {/* Price section */}
             <div className="flex items-baseline gap-3 mb-6">
@@ -294,6 +310,9 @@ export const ProductDetailsPage = () => {
           )}
         </div>
       </div>
+
+      {/* Customer Reviews Section */}
+      <ProductReviewsSection product={product} />
 
       {/* You May Also Like Section */}
       {relatedProducts.length > 0 && (

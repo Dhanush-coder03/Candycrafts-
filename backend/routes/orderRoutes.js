@@ -5,7 +5,8 @@ const {
   getOrderById,
   createOrder,
   updateOrderStatus,
-  deleteOrder
+  deleteOrder,
+  notifyOrderWhatsApp
 } = require('../controllers/orderController');
 
 router.route('/')
@@ -18,5 +19,8 @@ router.route('/:id')
 
 router.route('/:id/status')
   .put(updateOrderStatus);
+
+router.route('/:id/notify-whatsapp')
+  .post(notifyOrderWhatsApp);
 
 module.exports = router;

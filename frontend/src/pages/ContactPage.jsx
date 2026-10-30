@@ -30,7 +30,7 @@ export const ContactPage = () => {
       return;
     }
 
-    // Save message to inquiries store in localStorage so Admin can view it
+    // Save message to inquiries store so Admin can view it and sync with server
     const newInquiry = addInquiry({
       name: formData.name.trim(),
       email: formData.email.trim(),

@@ -89,7 +89,7 @@ export const ProductCard = ({ product }) => {
         {/* Price & Action */}
         <div className="mt-4 pt-3 border-t border-cream-100 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="font-serif text-lg font-bold text-walnut-900">
+            <span className="font-sans text-lg font-bold text-walnut-900">
               {formatPrice(product.price)}
             </span>
             {product.originalPrice && (

@@ -23,7 +23,7 @@ export const AdminHeader = ({ onToggleMobileSidebar, title = "Admin Dashboard" }
             {title}
           </h1>
           <p className="text-xs text-walnut-500 hidden sm:block">
-            Browser LocalStorage Mode • Live Store Sync Active
+            Live Store Mode • Direct Cloud Sync Active
           </p>
         </div>
       </div>
@@ -32,7 +32,7 @@ export const AdminHeader = ({ onToggleMobileSidebar, title = "Admin Dashboard" }
         {/* Storage status badge */}
         <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cream-100 text-walnut-600 border border-cream-200 text-xs">
           <HardDriveDownload className="w-3.5 h-3.5 text-sage-500" />
-          <span>{products.length} Products in Storage</span>
+          <span>{products.length} Products Active</span>
         </div>
 
         {/* Quick Add Product Button */}

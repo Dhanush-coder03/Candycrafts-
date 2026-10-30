@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const { sendOrderEmails } = require('../utils/emailService');
+const { sendOrderWhatsApp } = require('../utils/whatsappService');
 
 // @desc    Get all orders
 // @route   GET /api/orders
@@ -42,17 +43,26 @@ exports.createOrder = async (req, res) => {
 
     const newOrder = await Order.create(orderData);
 
-    // Send automated emails via Nodemailer if configured
+    // 1. Send automated emails via Nodemailer if configured
     try {
       await sendOrderEmails(newOrder);
     } catch (err) {
       console.warn('Email dispatch notice:', err.message);
     }
 
+    // 2. Dispatch automated WhatsApp notifications to BOTH Customer and Owner
+    let whatsappResult = null;
+    try {
+      whatsappResult = await sendOrderWhatsApp(newOrder);
+    } catch (err) {
+      console.warn('WhatsApp dispatch notice:', err.message);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Your order query has been sent! We will contact you soon.',
-      data: newOrder
+      data: newOrder,
+      whatsapp: whatsappResult
     });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -86,6 +96,26 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
+// @desc    Trigger WhatsApp notification for order (Customer + Owner)
+// @route   POST /api/orders/:id/notify-whatsapp
+exports.notifyOrderWhatsApp = async (req, res) => {
+  try {
+    const order = await Order.findOne({ id: req.params.id });
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const whatsappResult = await sendOrderWhatsApp(order);
+    res.json({
+      success: true,
+      message: 'WhatsApp notification prepared and dispatched successfully for both Customer and Owner.',
+      data: whatsappResult
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Delete order
 // @route   DELETE /api/orders/:id
 exports.deleteOrder = async (req, res) => {
@@ -101,3 +131,4 @@ exports.deleteOrder = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+

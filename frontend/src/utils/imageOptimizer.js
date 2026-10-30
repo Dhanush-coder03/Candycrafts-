@@ -1,6 +1,6 @@
 /**
  * Utility to compress and convert images to Base64 strings.
- * This ensures that local image uploads fit cleanly within localStorage limits (5MB)
+ * This ensures that image uploads are optimized for fast delivery
  * without sacrificing visual quality.
  */
 

@@ -171,7 +171,7 @@ export const ProductDetailsPage = () => {
 
             {/* Price section */}
             <div className="flex items-baseline gap-3 mb-6">
-              <span className="font-serif text-3xl font-bold text-walnut-900">
+              <span className="font-sans text-3xl font-bold text-walnut-900">
                 {formatPrice(product.price)}
               </span>
               {product.originalPrice && (

@@ -79,15 +79,63 @@ Candy Crafts Atelier Team`;
   return `mailto:${encodeURIComponent(order.customerEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 };
 
-export const generateWhatsAppOrderUrl = (order, phone = '+91 98765 43210') => {
-  const cleanPhone = phone.replace(/[^0-9]/g, '');
-  const text = `Hello Candy Crafts! I have submitted an order query #${order.id} for "${order.items?.[0]?.name || 'Craft Product'}" (Total: Rs. ${order.totalAmount}).
-Customer: ${order.customerName}
-Phone: ${order.customerPhone}
-Gmail: ${order.customerEmail}`;
+export const generateOwnerWhatsAppUrl = (order, phone = '+91 98765 43210') => {
+  const cleanPhone = (phone || '+91 98765 43210').replace(/[^0-9]/g, '');
+  const itemsText = (order.items || [])
+    .map(i => `• ${i.name} (Qty: ${i.quantity}) - Rs. ${(i.price * i.quantity).toLocaleString('en-IN')}`)
+    .join('\n');
+
+  const text = `🌸 *CANDY CRAFTS - NEW ORDER QUERY* 🌸
+
+• *Order ID:* #${order.id}
+• *Date:* ${new Date(order.createdAt || Date.now()).toLocaleDateString('en-IN')}
+
+👤 *CUSTOMER DETAILS:*
+• *Name:* ${order.customerName}
+• *Phone:* ${order.customerPhone}
+• *Gmail / Email:* ${order.customerEmail}
+• *Delivery Address:*
+${order.shippingAddress || 'To be confirmed on call'}
+${order.notes ? `• *Special Note:* "${order.notes}"\n` : ''}
+📦 *ORDERED ITEMS:*
+${itemsText}
+
+💰 *TOTAL AMOUNT:* Rs. ${(order.totalAmount || 0).toLocaleString('en-IN')}
+🎁 *Packaging:* Complimentary Handcrafted Box
+
+Action: Please contact customer at ${order.customerPhone} or ${order.customerEmail} to confirm custom crafting schedule and dispatch.`;
 
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
 };
+
+export const generateCustomerWhatsAppUrl = (order) => {
+  const cleanPhone = (order.customerPhone || '').replace(/[^0-9]/g, '');
+  const itemsText = (order.items || [])
+    .map(i => `• ${i.name} (Qty: ${i.quantity}) - Rs. ${(i.price * i.quantity).toLocaleString('en-IN')}`)
+    .join('\n');
+
+  const text = `🌸 *CANDY CRAFTS - ORDER CONFIRMATION* 🌸
+
+Dear ${order.customerName},
+
+Thank you for choosing Candy Crafts! Your order query #${order.id} has been received by our atelier.
+
+📦 *ITEMS:*
+${itemsText}
+
+💰 *TOTAL AMOUNT:* Rs. ${(order.totalAmount || 0).toLocaleString('en-IN')}
+🚚 *DELIVERY ADDRESS:*
+${order.shippingAddress || 'To be confirmed on call'}
+
+Our artisan studio will reach out to you on ${order.customerPhone} shortly to confirm your handmade arrangement!
+
+Candy Crafts Atelier Team`;
+
+  return cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}` : '#';
+};
+
+export const generateWhatsAppOrderUrl = generateOwnerWhatsAppUrl;
+
 
 /**
  * Generate email for Owner (candycraftssstudio@gmail.com) when a customer submits an inquiry

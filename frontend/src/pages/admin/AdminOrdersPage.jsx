@@ -104,7 +104,7 @@ export const AdminOrdersPage = () => {
             <span>Total Revenue</span>
             <Sparkles className="w-4 h-4 text-terracotta-500" />
           </div>
-          <div className="mt-2 font-serif text-2xl font-bold text-terracotta-600">{formatPrice(totalRevenue)}</div>
+          <div className="mt-2 font-sans text-2xl font-bold text-terracotta-600">{formatPrice(totalRevenue)}</div>
           <span className="text-[11px] text-walnut-400">Excluding cancellations</span>
         </div>
       </div>
@@ -276,7 +276,7 @@ export const AdminOrdersPage = () => {
 
                       {/* Total Amount */}
                       <td className="py-4 px-4">
-                        <span className="font-serif font-bold text-walnut-900 text-sm">
+                        <span className="font-sans font-bold text-walnut-900 text-sm">
                           {formatPrice(order.totalAmount)}
                         </span>
                       </td>

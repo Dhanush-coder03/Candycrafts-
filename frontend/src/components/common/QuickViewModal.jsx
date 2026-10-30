@@ -98,7 +98,7 @@ export const QuickViewModal = () => {
 
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-4">
-              <span className="font-serif text-2xl font-bold text-walnut-900">
+              <span className="font-sans text-2xl font-bold text-walnut-900">
                 {formatPrice(product.price)}
               </span>
               {product.originalPrice && (

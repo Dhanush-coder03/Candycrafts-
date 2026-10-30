@@ -122,7 +122,7 @@ export const ImageUploader = ({ images = [], onChange, maxImages = 6 }) => {
               {isProcessing ? 'Optimizing & Compressing Images...' : 'Click to upload or drag & drop craft photography'}
             </p>
             <p className="text-xs text-walnut-500">
-              Auto-compressed to Base64 for instant localStorage storage (JPG, PNG, WebP up to 10MB)
+              Auto-compressed for fast loading and direct cloud sync (JPG, PNG, WebP up to 10MB)
             </p>
           </div>
 

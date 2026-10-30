@@ -21,7 +21,7 @@ export const AdminLayout = () => {
   } else if (location.pathname.includes('/admin/categories')) {
     pageTitle = "Collections & Categories";
   } else if (location.pathname.includes('/admin/contact')) {
-    pageTitle = "Studio Contact Information Settings";
+    pageTitle = "Studio Contact, Email & WhatsApp Settings";
   } else if (location.pathname.includes('/admin/inquiries')) {
     pageTitle = "Customer Messages & Inquiries";
   } else if (location.pathname.includes('/admin/reviews')) {

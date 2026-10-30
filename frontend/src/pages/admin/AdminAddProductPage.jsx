@@ -81,7 +81,7 @@ export const AdminAddProductPage = () => {
       navigate('/admin/products');
     } catch (err) {
       console.error(err);
-      setErrorMsg('An error occurred while saving the product to localStorage.');
+      setErrorMsg('An error occurred while saving the product.');
       setSubmitting(false);
     }
   };
@@ -300,7 +300,7 @@ export const AdminAddProductPage = () => {
               className="px-8 py-3 rounded-full bg-terracotta-500 hover:bg-terracotta-600 disabled:bg-walnut-300 text-white text-xs font-semibold uppercase tracking-wider shadow-soft transition flex items-center gap-2 active:scale-95"
             >
               <Save className="w-4 h-4" />
-              <span>{submitting ? 'Saving to LocalStorage...' : 'Save & Publish Product'}</span>
+              <span>{submitting ? 'Saving Product...' : 'Save & Publish Product'}</span>
             </button>
           </div>
 
@@ -351,7 +351,7 @@ export const AdminAddProductPage = () => {
               </h4>
 
               <div className="flex items-baseline gap-2 pt-2 border-t border-cream-100">
-                <span className="font-serif text-lg font-bold text-walnut-900">
+                <span className="font-sans text-lg font-bold text-walnut-900">
                   {formData.price ? formatPrice(formData.price) : '₹0'}
                 </span>
                 {formData.originalPrice && (

@@ -221,7 +221,7 @@ export const AdminProductsPage = () => {
       <ConfirmModal
         isOpen={Boolean(productToDelete)}
         title="Delete Craft Product"
-        message={`Are you sure you want to delete "${productToDelete?.name}"? This action will remove it permanently from localStorage and immediately update the public website.`}
+        message={`Are you sure you want to delete "${productToDelete?.name}"? This action will remove it permanently and immediately update the public website.`}
         confirmText="Yes, Delete Product"
         cancelText="Cancel"
         onConfirm={handleDeleteConfirm}

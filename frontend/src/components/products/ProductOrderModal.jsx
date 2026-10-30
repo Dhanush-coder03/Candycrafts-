@@ -18,7 +18,8 @@ import { formatPrice } from '../../utils/formatters';
 import { 
   generateOwnerOrderEmail, 
   generateCustomerConfirmationEmail, 
-  generateWhatsAppOrderUrl 
+  generateOwnerWhatsAppUrl,
+  generateCustomerWhatsAppUrl 
 } from '../../utils/emailService';
 
 export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 1 }) => {
@@ -72,6 +73,15 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
       });
 
       setSubmittedOrder(newOrder);
+
+      // Auto-route order to WhatsApp so owner receives order notification directly
+      try {
+        const ownerPhone = contactInfo?.phone || '+91 98765 43210';
+        const ownerWhatsAppUrl = generateOwnerWhatsAppUrl(newOrder, ownerPhone);
+        window.open(ownerWhatsAppUrl, '_blank');
+      } catch (waErr) {
+        console.warn('Auto-open WhatsApp notice:', waErr);
+      }
 
       // Confetti celebration
       try {
@@ -155,7 +165,7 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
                   <span className="font-mono text-xs font-bold text-terracotta-600">
                     Order Ref: #{submittedOrder.id}
                   </span>
-                  <span className="font-serif font-bold text-walnut-900 text-sm">
+                  <span className="font-sans font-bold text-walnut-900 text-sm">
                     {formatPrice(submittedOrder.totalAmount)}
                   </span>
                 </div>
@@ -195,27 +205,81 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
                 </div>
               </div>
 
-              {/* Action Buttons: Clean Done Button & Optional WhatsApp */}
-              <div className="space-y-2 pt-2">
-                <button
-                  onClick={handleResetAndClose}
-                  className="w-full py-3.5 px-6 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-semibold text-sm shadow-soft transition active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Done & Continue Browsing</span>
-                </button>
+              {/* Notification Badges: Email & WhatsApp */}
+              <div className="space-y-2 pt-1 text-left text-xs">
+                <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-800 space-y-1">
+                  <div className="flex items-center gap-2 font-semibold text-xs">
+                    <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>WhatsApp Notification Dispatched</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-700 leading-tight">
+                    Order message ready for Owner WhatsApp ({contactInfo?.whatsappNumber || contactInfo?.phone || '+91 98765 43210'}).
+                  </p>
+                </div>
 
-                {contactInfo?.phone && (
+                <div className="p-3 bg-cream-50 rounded-2xl border border-cream-200 text-walnut-700 space-y-1">
+                  <div className="flex items-center gap-2 font-semibold text-xs">
+                    <Mail className="w-4 h-4 text-terracotta-600 shrink-0" />
+                    <span>Email Notification Sent</span>
+                  </div>
+                  <p className="text-[11px] text-walnut-600 leading-tight">
+                    Sent to Owner (<strong>{ownerEmail}</strong>) & Customer (<strong>{submittedOrder.customerEmail}</strong>).
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons: WhatsApp & Email Buttons */}
+              <div className="space-y-2 pt-1">
+                {/* 1. Send Order to Owner on WhatsApp */}
+                <a
+                  href={generateOwnerWhatsAppUrl(submittedOrder, contactInfo?.whatsappNumber || contactInfo?.phone || '+91 98765 43210')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-soft transition flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Send Order to Atelier on WhatsApp ({contactInfo?.whatsappNumber || contactInfo?.phone || '+91 98765 43210'})</span>
+                </a>
+
+                {/* 2. Customer Copy on WhatsApp */}
+                {submittedOrder.customerPhone && (
                   <a
-                    href={generateWhatsAppOrderUrl(submittedOrder, contactInfo.phone)}
+                    href={generateCustomerWhatsAppUrl(submittedOrder)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-2.5 px-4 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium text-xs border border-emerald-200 transition flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-4 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-medium text-xs border border-emerald-200 transition flex items-center justify-center gap-2"
                   >
                     <MessageCircle className="w-4 h-4 text-emerald-600" />
-                    <span>Chat on WhatsApp (Optional)</span>
+                    <span>Send Order Receipt to Customer WhatsApp ({submittedOrder.customerPhone})</span>
                   </a>
                 )}
+
+                {/* 3. Send / Open Email to Owner */}
+                <a
+                  href={generateOwnerOrderEmail(submittedOrder, ownerEmail)}
+                  className="w-full py-2.5 px-4 rounded-full bg-terracotta-50 hover:bg-terracotta-100 text-terracotta-800 font-medium text-xs border border-terracotta-200 transition flex items-center justify-center gap-2"
+                >
+                  <Mail className="w-4 h-4 text-terracotta-600" />
+                  <span>Send Order Email to Owner ({ownerEmail})</span>
+                </a>
+
+                {/* 4. Send Confirmation Email to Customer */}
+                <a
+                  href={generateCustomerConfirmationEmail(submittedOrder, ownerEmail)}
+                  className="w-full py-2.5 px-4 rounded-full bg-cream-100 hover:bg-cream-200 text-walnut-800 font-medium text-xs border border-cream-300 transition flex items-center justify-center gap-2"
+                >
+                  <Mail className="w-4 h-4 text-walnut-600" />
+                  <span>Send Confirmation to Customer Gmail ({submittedOrder.customerEmail})</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={handleResetAndClose}
+                  className="w-full py-3 px-6 rounded-full bg-walnut-900 hover:bg-walnut-800 text-white font-semibold text-xs transition active:scale-95 flex items-center justify-center gap-2 mt-2"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Done & Continue Shopping</span>
+                </button>
               </div>
             </div>
           ) : (
@@ -344,9 +408,9 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
                   <span>Artisanal Packaging:</span>
                   <span className="text-sage-600 font-medium">Complimentary</span>
                 </div>
-                <div className="flex justify-between pt-1 border-t border-cream-200 font-serif text-sm font-bold text-walnut-900">
+                <div className="flex justify-between pt-1 border-t border-cream-200 font-sans text-sm font-bold text-walnut-900">
                   <span>Estimated Total:</span>
-                  <span className="text-terracotta-600">{formatPrice(totalPrice)}</span>
+                  <span className="text-terracotta-600 font-sans font-bold">{formatPrice(totalPrice)}</span>
                 </div>
               </div>
 

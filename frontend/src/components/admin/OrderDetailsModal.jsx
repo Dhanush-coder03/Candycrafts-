@@ -249,9 +249,9 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
                 <span>Artisanal Packaging & Shipping:</span>
                 <span className="text-sage-600 font-medium">Complimentary</span>
               </div>
-              <div className="flex justify-between pt-2 border-t border-cream-200 font-serif text-base font-bold text-walnut-900">
+              <div className="flex justify-between pt-2 border-t border-cream-200 font-sans text-base font-bold text-walnut-900">
                 <span>Grand Total:</span>
-                <span className="text-terracotta-600">{formatPrice(order.totalAmount)}</span>
+                <span className="text-terracotta-600 font-sans font-bold">{formatPrice(order.totalAmount)}</span>
               </div>
             </div>
           </div>

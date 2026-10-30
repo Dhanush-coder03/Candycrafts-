@@ -24,7 +24,8 @@ import { formatPrice } from '../../utils/formatters';
 import { 
   generateOwnerOrderEmail, 
   generateCustomerConfirmationEmail, 
-  generateWhatsAppOrderUrl 
+  generateOwnerWhatsAppUrl,
+  generateCustomerWhatsAppUrl 
 } from '../../utils/emailService';
 
 export const CartDrawer = () => {
@@ -75,7 +76,7 @@ export const CartDrawer = () => {
       category: product.category
     }));
 
-    // 1. Save order into localStorage so it immediately appears in Admin Panel
+    // 1. Record order so it immediately appears in Admin Panel and syncs with server
     const newOrder = placeOrder({
       customerName: customerName.trim(),
       customerPhone: customerPhone.trim(),
@@ -99,18 +100,11 @@ export const CartDrawer = () => {
       // safe fallback
     }
 
-    // Prepare email mailto link
-    const emailSubject = `[Candy Crafts] New Order #${newOrder.id} - ${customerName.trim()}`;
-    const itemsText = itemsSummary
-      .map(item => `• ${item.name} (Qty: ${item.quantity}) - Rs. ${(item.price * item.quantity).toLocaleString()}`)
-      .join('\n');
-
-    const ownerEmail = contactInfo?.ownerEmail || contactInfo?.email || 'candycraftssstudio@gmail.com';
-    const ownerMailto = generateOwnerOrderEmail(newOrder, ownerEmail);
-
-    // Automatically trigger mail client to owner
+    // Automatically route order to WhatsApp for instant studio communication
     try {
-      window.location.href = ownerMailto;
+      const ownerPhone = contactInfo?.phone || '+91 98765 43210';
+      const ownerWhatsAppUrl = generateOwnerWhatsAppUrl(newOrder, ownerPhone);
+      window.open(ownerWhatsAppUrl, '_blank');
     } catch {
       // safe fallback
     }
@@ -228,44 +222,80 @@ export const CartDrawer = () => {
                   </div>
                 </div>
 
+                {/* Notification Badges: Email & WhatsApp */}
+                <div className="w-full space-y-2 pt-1 text-left text-xs">
+                  <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-800 space-y-1">
+                    <div className="flex items-center gap-2 font-semibold text-xs">
+                      <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>WhatsApp Notification Dispatched</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-700 leading-tight">
+                      Order query message ready for Owner WhatsApp ({contactInfo?.whatsappNumber || contactInfo?.phone || '+91 98765 43210'}).
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-cream-50 rounded-2xl border border-cream-200 text-walnut-700 space-y-1">
+                    <div className="flex items-center gap-2 font-semibold text-xs">
+                      <Mail className="w-4 h-4 text-terracotta-600 shrink-0" />
+                      <span>Email Notification Sent</span>
+                    </div>
+                    <p className="text-[11px] text-walnut-600 leading-tight">
+                      Sent to Owner ({contactInfo?.ownerEmail || contactInfo?.email || 'candycraftssstudio@gmail.com'}) & Customer ({placedOrder.customerEmail}).
+                    </p>
+                  </div>
+                </div>
+
                 {/* Email and WhatsApp Dispatch Actions */}
                 <div className="w-full space-y-2 pt-1">
-                  {/* Send to Owner */}
+                  {/* 1. Send to Owner on WhatsApp */}
                   <a
-                    href={generateOwnerOrderEmail(placedOrder, contactInfo?.ownerEmail || contactInfo?.email || 'candycraftssstudio@gmail.com')}
-                    className="w-full py-3 px-4 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-medium text-xs shadow-soft transition flex items-center justify-center gap-2"
+                    href={generateOwnerWhatsAppUrl(placedOrder, contactInfo?.whatsappNumber || contactInfo?.phone || '+91 98765 43210')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-soft transition flex items-center justify-center gap-2"
                   >
-                    <Mail className="w-4 h-4" />
-                    <span>Send Order Query to Owner ({contactInfo?.ownerEmail || contactInfo?.email || 'candycraftssstudio@gmail.com'})</span>
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Send Order to Atelier on WhatsApp ({contactInfo?.whatsappNumber || contactInfo?.phone || '+91 98765 43210'})</span>
                   </a>
 
-                  {/* Send to Customer */}
+                  {/* 2. Send to Customer on WhatsApp */}
+                  {placedOrder.customerPhone && (
+                    <a
+                      href={generateCustomerWhatsAppUrl(placedOrder)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 px-4 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-medium text-xs border border-emerald-200 transition flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle className="w-4 h-4 text-emerald-600" />
+                      <span>Send Order Receipt to Customer WhatsApp ({placedOrder.customerPhone})</span>
+                    </a>
+                  )}
+
+                  {/* 3. Send to Owner via Email */}
+                  <a
+                    href={generateOwnerOrderEmail(placedOrder, contactInfo?.ownerEmail || contactInfo?.email || 'candycraftssstudio@gmail.com')}
+                    className="w-full py-2.5 px-4 rounded-full bg-terracotta-50 hover:bg-terracotta-100 text-terracotta-800 font-medium text-xs border border-terracotta-200 transition flex items-center justify-center gap-2"
+                  >
+                    <Mail className="w-4 h-4 text-terracotta-600" />
+                    <span>Send Order Email to Owner ({contactInfo?.ownerEmail || contactInfo?.email || 'candycraftssstudio@gmail.com'})</span>
+                  </a>
+
+                  {/* 4. Send to Customer via Email */}
                   <a
                     href={generateCustomerConfirmationEmail(placedOrder, contactInfo?.ownerEmail || contactInfo?.email || 'candycraftssstudio@gmail.com')}
                     className="w-full py-2.5 px-4 rounded-full bg-cream-100 hover:bg-cream-200 text-walnut-800 font-medium text-xs border border-cream-300 transition flex items-center justify-center gap-2"
                   >
-                    <Mail className="w-4 h-4 text-terracotta-600" />
+                    <Mail className="w-4 h-4 text-walnut-600" />
                     <span>Send Confirmation to My Gmail ({placedOrder.customerEmail})</span>
                   </a>
-
-                  {contactInfo?.phone && (
-                    <a
-                      href={generateWhatsAppOrderUrl(placedOrder, contactInfo.phone)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition flex items-center justify-center gap-2"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>Send Order on WhatsApp</span>
-                    </a>
-                  )}
 
                   <button
                     type="button"
                     onClick={handleResetOrder}
-                    className="w-full py-2.5 px-4 rounded-full bg-white hover:bg-cream-100 text-walnut-700 text-xs font-semibold transition border border-cream-200"
+                    className="w-full py-3 px-4 rounded-full bg-walnut-900 hover:bg-walnut-800 text-white text-xs font-semibold transition active:scale-95 flex items-center justify-center gap-2 mt-2"
                   >
-                    Continue Shopping
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Continue Shopping</span>
                   </button>
                 </div>
               </div>

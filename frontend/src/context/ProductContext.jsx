@@ -90,68 +90,13 @@ const INITIAL_ORDERS = [
 const ProductContext = createContext(null);
 
 export const ProductProvider = ({ children }) => {
-  // Load products from localStorage or fallback to INITIAL_PRODUCTS
-  const [products, setProducts] = useState(() => {
-    const saved = getFromStorage(STORAGE_KEYS.PRODUCTS, null);
-    if (saved && Array.isArray(saved) && saved.length > 0) {
-      return saved;
-    }
-    saveToStorage(STORAGE_KEYS.PRODUCTS, INITIAL_PRODUCTS);
-    return INITIAL_PRODUCTS;
-  });
-
-  // Load categories from localStorage or INITIAL_CATEGORIES
-  const [categories, setCategories] = useState(() => {
-    const saved = getFromStorage(STORAGE_KEYS.CATEGORIES, null);
-    if (saved && Array.isArray(saved) && saved.length > 0) {
-      return saved;
-    }
-    saveToStorage(STORAGE_KEYS.CATEGORIES, INITIAL_CATEGORIES);
-    return INITIAL_CATEGORIES;
-  });
-
-  // Load Contact Information (Editable by Admin)
-  const [contactInfo, setContactInfo] = useState(() => {
-    const saved = getFromStorage(STORAGE_KEYS.CONTACT_INFO, null);
-    if (saved) {
-      const updated = {
-        ...DEFAULT_CONTACT_INFO,
-        ...saved,
-        email: (!saved.email || saved.email === 'concierge@candycrafts.com') ? 'candycraftssstudio@gmail.com' : saved.email,
-        ownerEmail: (!saved.ownerEmail || saved.ownerEmail === 'candycrafts2026@gmail.com' || saved.ownerEmail === 'concierge@candycrafts.com')
-          ? 'candycraftssstudio@gmail.com'
-          : saved.ownerEmail
-      };
-      saveToStorage(STORAGE_KEYS.CONTACT_INFO, updated);
-      return updated;
-    }
-    saveToStorage(STORAGE_KEYS.CONTACT_INFO, DEFAULT_CONTACT_INFO);
-    return DEFAULT_CONTACT_INFO;
-  });
-
-  // Load Customer Inquiries & Messages
-  const [inquiries, setInquiries] = useState(() => {
-    const saved = getFromStorage(STORAGE_KEYS.INQUIRIES, null);
-    if (saved && Array.isArray(saved)) return saved;
-    saveToStorage(STORAGE_KEYS.INQUIRIES, INITIAL_INQUIRIES);
-    return INITIAL_INQUIRIES;
-  });
-
-  // Load Customer Orders
-  const [orders, setOrders] = useState(() => {
-    const saved = getFromStorage(STORAGE_KEYS.ORDERS, null);
-    if (saved && Array.isArray(saved)) return saved;
-    saveToStorage(STORAGE_KEYS.ORDERS, INITIAL_ORDERS);
-    return INITIAL_ORDERS;
-  });
-
-  // Load Customer Reviews (Starts at 0 / empty [] with zero dummy data)
-  const [reviews, setReviews] = useState(() => {
-    const saved = getFromStorage(STORAGE_KEYS.REVIEWS, null);
-    if (saved && Array.isArray(saved)) return saved;
-    saveToStorage(STORAGE_KEYS.REVIEWS, []);
-    return [];
-  });
+  // In-memory state initialization (No localStorage / No caching as requested)
+  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  const [contactInfo, setContactInfo] = useState(DEFAULT_CONTACT_INFO);
+  const [inquiries, setInquiries] = useState(INITIAL_INQUIRIES);
+  const [orders, setOrders] = useState(INITIAL_ORDERS);
+  const [reviews, setReviews] = useState([]);
 
   // Toast state
   const [toast, setToast] = useState(null);
@@ -233,78 +178,7 @@ export const ProductProvider = ({ children }) => {
     });
   }, [reviews]);
 
-  // Sync products back to localStorage on change
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.PRODUCTS, products);
-  }, [products]);
 
-  // Sync categories back to localStorage on change
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.CATEGORIES, categories);
-  }, [categories]);
-
-  // Sync contactInfo to localStorage
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.CONTACT_INFO, contactInfo);
-  }, [contactInfo]);
-
-  // Sync inquiries to localStorage
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.INQUIRIES, inquiries);
-  }, [inquiries]);
-
-  // Sync orders to localStorage
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.ORDERS, orders);
-  }, [orders]);
-
-  // Sync reviews to localStorage
-  useEffect(() => {
-    saveToStorage(STORAGE_KEYS.REVIEWS, reviews);
-  }, [reviews]);
-
-  // Listen to cross-tab storage changes
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === STORAGE_KEYS.PRODUCTS && e.newValue) {
-        try {
-          setProducts(JSON.parse(e.newValue));
-        } catch (err) {
-          console.error(err);
-        }
-      }
-      if (e.key === STORAGE_KEYS.CONTACT_INFO && e.newValue) {
-        try {
-          setContactInfo(JSON.parse(e.newValue));
-        } catch (err) {
-          console.error(err);
-        }
-      }
-      if (e.key === STORAGE_KEYS.INQUIRIES && e.newValue) {
-        try {
-          setInquiries(JSON.parse(e.newValue));
-        } catch (err) {
-          console.error(err);
-        }
-      }
-      if (e.key === STORAGE_KEYS.ORDERS && e.newValue) {
-        try {
-          setOrders(JSON.parse(e.newValue));
-        } catch (err) {
-          console.error(err);
-        }
-      }
-      if (e.key === STORAGE_KEYS.REVIEWS && e.newValue) {
-        try {
-          setReviews(JSON.parse(e.newValue));
-        } catch (err) {
-          console.error(err);
-        }
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
 
   // CRUD Operations on Products
   const addProduct = (productData) => {
@@ -441,11 +315,6 @@ export const ProductProvider = ({ children }) => {
     setContactInfo(DEFAULT_CONTACT_INFO);
     setInquiries(INITIAL_INQUIRIES);
     setReviews([]);
-    saveToStorage(STORAGE_KEYS.PRODUCTS, INITIAL_PRODUCTS);
-    saveToStorage(STORAGE_KEYS.CATEGORIES, INITIAL_CATEGORIES);
-    saveToStorage(STORAGE_KEYS.CONTACT_INFO, DEFAULT_CONTACT_INFO);
-    saveToStorage(STORAGE_KEYS.INQUIRIES, INITIAL_INQUIRIES);
-    saveToStorage(STORAGE_KEYS.REVIEWS, []);
     showToast('Store reset to initial curated handmade catalog!', 'info');
   };
 
@@ -570,7 +439,7 @@ export const ProductProvider = ({ children }) => {
   };
 
   // Orders Management
-  const placeOrder = (orderData) => {
+  const placeOrder = async (orderData) => {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const newOrder = {
       id: `ORD-2026-${randomSuffix}`,
@@ -588,10 +457,15 @@ export const ProductProvider = ({ children }) => {
     setOrders(prev => [newOrder, ...prev]);
     showToast(`Order #${newOrder.id} received! Check Admin Panel.`, 'success');
 
-    // Async sync to MongoDB & triggers Nodemailer email dispatch
-    api.createOrder(newOrder).catch(err => {
+    // Async sync to MongoDB & triggers both Nodemailer Email + WhatsApp dispatch
+    try {
+      const res = await api.createOrder(newOrder);
+      if (res?.whatsapp) {
+        newOrder.whatsapp = res.whatsapp;
+      }
+    } catch (err) {
       console.warn('Backend sync notice (Order):', err.message);
-    });
+    }
 
     return newOrder;
   };
@@ -648,6 +522,7 @@ export const ProductProvider = ({ children }) => {
         placeOrder,
         updateOrderStatus,
         deleteOrder,
+        notifyOrderWhatsApp: (id) => api.notifyOrderWhatsApp(id),
         reviews,
         addReview,
         deleteReview,

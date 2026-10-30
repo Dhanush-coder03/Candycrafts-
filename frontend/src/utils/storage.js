@@ -1,6 +1,19 @@
 /**
- * Safe localStorage wrapper with error boundaries and fallback support
+ * In-memory storage wrapper (No localStorage / No caching as requested)
+ * All persistence is handled directly via live server / MongoDB API.
  */
+
+// Purge any stale cache or localStorage keys from previous sessions
+try {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.clear();
+  }
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    window.sessionStorage.clear();
+  }
+} catch (e) {
+  // safe fallback
+}
 
 export const STORAGE_KEYS = {
   PRODUCTS: 'craft_products',
@@ -13,33 +26,21 @@ export const STORAGE_KEYS = {
   REVIEWS: 'craft_reviews'
 };
 
-export const getFromStorage = (key, fallback = null) => {
-  try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : fallback;
-  } catch (error) {
-    console.warn(`Error reading localStorage key "${key}":`, error);
-    return fallback;
-  }
+/**
+ * Does NOT read from localStorage to avoid caching stale data.
+ * Always returns fallback so state is loaded fresh from catalog or backend API.
+ */
+export const getFromStorage = (_key, fallback = null) => {
+  return fallback;
 };
 
-export const saveToStorage = (key, data) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-    return true;
-  } catch (error) {
-    console.error(`Error saving to localStorage key "${key}":`, error);
-    if (error.name === 'QuotaExceededError' || error.code === 22) {
-      alert('Local storage is full! Please delete some products or use smaller images.');
-    }
-    return false;
-  }
+/**
+ * Does NOT store in localStorage or browser cache.
+ */
+export const saveToStorage = (_key, _data) => {
+  return true;
 };
 
-export const removeFromStorage = (key) => {
-  try {
-    localStorage.removeItem(key);
-  } catch (error) {
-    console.error(`Error removing localStorage key "${key}":`, error);
-  }
+export const removeFromStorage = (_key) => {
+  return true;
 };

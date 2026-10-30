@@ -95,7 +95,7 @@ export const AdminDashboardPage = () => {
                   ? 'Node.js & MongoDB: Connected'
                   : serverStatus.online
                   ? 'Node.js: Online (MongoDB: Set URI in .env)'
-                  : 'Node.js Backend: Ready (Offline Cache Active)'}
+                  : 'Node.js Backend: Ready (Live Server Sync)'}
               </span>
             </span>
           </div>
@@ -257,7 +257,7 @@ export const AdminDashboardPage = () => {
                         <span className="truncate max-w-[170px]">{order.customerEmail}</span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 font-serif font-bold text-walnut-900 text-sm">
+                    <td className="py-3.5 px-4 font-sans font-bold text-walnut-900 text-sm">
                       {formatPrice(order.totalAmount)}
                     </td>
                     <td className="py-3.5 px-4">

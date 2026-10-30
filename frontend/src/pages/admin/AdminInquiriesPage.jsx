@@ -318,7 +318,7 @@ export const AdminInquiriesPage = () => {
       <ConfirmModal
         isOpen={Boolean(inquiryToDelete)}
         title="Delete Customer Message"
-        message={`Are you sure you want to delete the message from "${inquiryToDelete?.name}"? It will be removed from localStorage.`}
+        message={`Are you sure you want to delete the message from "${inquiryToDelete?.name}"? It will be removed permanently.`}
         confirmText="Yes, Delete Message"
         cancelText="Cancel"
         onConfirm={handleDeleteConfirm}

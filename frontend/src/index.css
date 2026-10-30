@@ -12,6 +12,11 @@
   h1, h2, h3, h4, .font-serif-luxury {
     font-family: 'Playfair Display', Georgia, serif;
   }
+
+  /* Price typography: normal clean font */
+  .price-text, .price, [data-price] {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+  }
 }
 
 /* Custom subtle scrollbars */

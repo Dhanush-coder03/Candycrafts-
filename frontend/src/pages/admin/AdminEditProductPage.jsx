@@ -36,7 +36,7 @@ export const AdminEditProductPage = () => {
     return (
       <div className="py-20 text-center space-y-4">
         <h2 className="font-serif text-2xl font-bold text-walnut-900">Craft Product Not Found</h2>
-        <p className="text-sm text-walnut-600">The product you are trying to edit does not exist in localStorage.</p>
+        <p className="text-sm text-walnut-600">The product you are trying to edit does not exist.</p>
         <Link
           to="/admin/products"
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-terracotta-500 text-white text-xs font-semibold uppercase tracking-wider"
@@ -91,7 +91,7 @@ export const AdminEditProductPage = () => {
       navigate('/admin/products');
     } catch (err) {
       console.error(err);
-      setErrorMsg('Failed to update product in localStorage.');
+      setErrorMsg('Failed to update product.');
       setSubmitting(false);
     }
   };
@@ -112,7 +112,7 @@ export const AdminEditProductPage = () => {
               Edit Handcrafted Product
             </h2>
             <p className="text-xs text-walnut-500">
-              Update photos, price, availability, or artisan description. Updates immediately in localStorage.
+              Update photos, price, availability, or artisan description.
             </p>
           </div>
         </div>
@@ -218,7 +218,7 @@ export const AdminEditProductPage = () => {
           <div className="space-y-4 pt-4 border-t border-cream-200">
             <h3 className="font-serif text-lg font-bold text-walnut-900 border-b border-cream-200 pb-2 flex items-center justify-between">
               <span>Product Photography Gallery</span>
-              <span className="text-xs font-normal text-walnut-500">Base64 Images in LocalStorage</span>
+              <span className="text-xs font-normal text-walnut-500">Live Images</span>
             </h3>
 
             <ImageUploader
@@ -361,7 +361,7 @@ export const AdminEditProductPage = () => {
               </h4>
 
               <div className="flex items-baseline gap-2 pt-2 border-t border-cream-100">
-                <span className="font-serif text-lg font-bold text-walnut-900">
+                <span className="font-sans text-lg font-bold text-walnut-900">
                   {formData.price ? formatPrice(formData.price) : '₹0'}
                 </span>
                 {formData.originalPrice && (

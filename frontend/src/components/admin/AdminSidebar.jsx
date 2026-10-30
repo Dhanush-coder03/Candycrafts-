@@ -44,7 +44,7 @@ export const AdminSidebar = ({ mobileOpen, setMobileOpen }) => {
       badge: reviews.length > 0 ? reviews.length : undefined,
       badgeStyle: 'bg-amber-500 text-white'
     },
-    { name: 'Contact Info', path: '/admin/contact', icon: PhoneCall },
+    { name: 'Contact & WhatsApp', path: '/admin/contact', icon: PhoneCall },
     { 
       name: 'Customer Inquiries', 
       path: '/admin/inquiries', 

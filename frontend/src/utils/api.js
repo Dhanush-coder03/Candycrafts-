@@ -16,8 +16,12 @@ async function apiRequest(endpoint, options = {}, timeoutMs = 4000) {
   try {
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
         ...(options.headers || {})
       },
       signal: controller.signal
@@ -110,6 +114,9 @@ export const api = {
   deleteOrder: async (id) => {
     return apiRequest(`/orders/${id}`, { method: 'DELETE' });
   },
+  notifyOrderWhatsApp: async (id) => {
+    return apiRequest(`/orders/${id}/notify-whatsapp`, { method: 'POST' });
+  },
 
   // Inquiries
   getInquiries: async () => {
@@ -142,6 +149,12 @@ export const api = {
     return apiRequest('/contact/test-email', {
       method: 'POST',
       body: JSON.stringify(emailData)
+    }, 15000);
+  },
+  testWhatsAppConfig: async (whatsappData) => {
+    return apiRequest('/contact/test-whatsapp', {
+      method: 'POST',
+      body: JSON.stringify(whatsappData)
     }, 15000);
   },
 

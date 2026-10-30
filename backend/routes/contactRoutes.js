@@ -3,7 +3,8 @@ const router = express.Router();
 const {
   getContactInfo,
   updateContactInfo,
-  testEmailConfig
+  testEmailConfig,
+  testWhatsAppConfig
 } = require('../controllers/contactController');
 
 router.route('/')
@@ -11,5 +12,6 @@ router.route('/')
   .put(updateContactInfo);
 
 router.post('/test-email', testEmailConfig);
+router.post('/test-whatsapp', testWhatsAppConfig);
 
 module.exports = router;

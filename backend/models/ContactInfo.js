@@ -40,6 +40,27 @@ const contactInfoSchema = new mongoose.Schema({
   instagramHandle: {
     type: String,
     default: '@candycrafts2026'
+  },
+  // WhatsApp Automated Messaging Settings
+  whatsappNumber: {
+    type: String,
+    default: '+91 98765 43210'
+  },
+  whatsappToken: {
+    type: String,
+    default: ''
+  },
+  whatsappPhoneNumberId: {
+    type: String,
+    default: ''
+  },
+  whatsappBusinessAccountId: {
+    type: String,
+    default: ''
+  },
+  whatsappEnabled: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true

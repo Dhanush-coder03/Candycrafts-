@@ -22,7 +22,7 @@ import { generateDirectProductWhatsAppUrl } from '../utils/emailService';
 
 export const ProductDetailsPage = () => {
   const { id } = useParams();
-  const { products, getProductById, showToast, contactInfo } = useProducts();
+  const { products, getProductById, showToast, contactInfo, loading } = useProducts();
 
   const product = getProductById(id);
 
@@ -37,6 +37,15 @@ export const ProductDetailsPage = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [id]);
+
+  if (loading?.products && !product) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-32 text-center space-y-3">
+        <div className="w-8 h-8 border-3 border-terracotta-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-xs text-walnut-500 font-medium">Loading craft from database...</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (

@@ -37,7 +37,7 @@ export const AdminAddProductPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -59,7 +59,7 @@ export const AdminAddProductPage = () => {
     setSubmitting(true);
 
     try {
-      const newProduct = addProduct({
+      await addProduct({
         name: formData.name.trim(),
         price: Number(formData.price),
         originalPrice: formData.originalPrice ? Number(formData.originalPrice) : null,
@@ -81,7 +81,7 @@ export const AdminAddProductPage = () => {
       navigate('/admin/products');
     } catch (err) {
       console.error(err);
-      setErrorMsg('An error occurred while saving the product.');
+      setErrorMsg(err.message || 'An error occurred while saving the product to database.');
       setSubmitting(false);
     }
   };

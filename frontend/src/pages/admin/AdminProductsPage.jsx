@@ -1,22 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
   Trash2, 
   Edit, 
-  Eye
+  Eye,
+  RefreshCw,
+  Loader2,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { formatPrice, formatDate } from '../../utils/formatters';
 
 export const AdminProductsPage = () => {
-  const { products, deleteProduct, toggleFeatured, toggleAvailability, categories } = useProducts();
+  const { 
+    products, 
+    deleteProduct, 
+    toggleFeatured, 
+    toggleAvailability, 
+    categories, 
+    refreshProducts,
+    serverStatus,
+    loading 
+  } = useProducts();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [productToDelete, setProductToDelete] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Auto-fetch fresh products from MongoDB Atlas on mount
+  useEffect(() => {
+    if (refreshProducts) {
+      refreshProducts();
+    }
+  }, []);
+
+  const handleManualSync = async () => {
+    setIsRefreshing(true);
+    if (refreshProducts) await refreshProducts();
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
 
   const filteredProducts = products.filter((p) => {
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
@@ -27,9 +54,9 @@ export const AdminProductsPage = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (productToDelete) {
-      deleteProduct(productToDelete.id);
+      await deleteProduct(productToDelete.id);
       setProductToDelete(null);
     }
   };
@@ -44,17 +71,49 @@ export const AdminProductsPage = () => {
             Craft Catalog Management
           </h2>
           <p className="text-xs text-walnut-500">
-            Manage your store inventory, upload new Base64 photography, and adjust featured highlights.
+            Live MongoDB product catalog. Changes reflect immediately across public store and database.
           </p>
         </div>
 
-        <Link
-          to="/admin/products/add"
-          className="px-5 py-2.5 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white text-xs font-semibold uppercase tracking-wider shadow-xs transition flex items-center justify-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Product</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Sync Button */}
+          <button
+            onClick={handleManualSync}
+            disabled={isRefreshing}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-cream-300 bg-white hover:bg-cream-50 text-walnut-700 text-xs font-semibold transition"
+            title="Reload products from MongoDB Atlas"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-terracotta-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Syncing...' : 'Sync DB'}</span>
+          </button>
+
+          <Link
+            to="/admin/products/add"
+            className="px-5 py-2.5 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white text-xs font-semibold uppercase tracking-wider shadow-xs transition flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Product</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* DB Status Badge */}
+      <div className={`flex items-center gap-2 text-xs px-4 py-2 rounded-xl border ${
+        serverStatus?.dbConnected
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+          : 'bg-amber-50 border-amber-200 text-amber-700'
+      }`}>
+        {serverStatus?.dbConnected
+          ? <CheckCircle2 className="w-3.5 h-3.5" />
+          : <AlertCircle className="w-3.5 h-3.5" />
+        }
+        <span>
+          {serverStatus?.checked
+            ? (serverStatus?.dbConnected
+              ? `Live Cloud Sync Active — Connected to MongoDB Atlas (${products.length} products loaded directly from database).`
+              : `Offline Mode — Please check that your backend server is running.`)
+            : 'Connecting to MongoDB Atlas...'}
+        </span>
       </div>
 
       {/* Filter and Search Bar */}
@@ -82,7 +141,7 @@ export const AdminProductsPage = () => {
             >
               <option value="All">All Categories ({products.length})</option>
               {categories.map((c) => (
-                <option key={c.id} value={c.name}>
+                <option key={c.id || c.name} value={c.name}>
                   {c.name} ({products.filter(p => p.category === c.name).length})
                 </option>
               ))}
@@ -111,7 +170,14 @@ export const AdminProductsPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-cream-100 text-sm">
-              {filteredProducts.length === 0 ? (
+              {loading?.products && products.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="py-16 text-center text-walnut-500 text-sm">
+                    <Loader2 className="w-7 h-7 text-terracotta-500 animate-spin mx-auto mb-2" />
+                    <span>Loading products from MongoDB...</span>
+                  </td>
+                </tr>
+              ) : filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="py-12 text-center text-walnut-500 text-sm">
                     No products matched your search.
@@ -119,20 +185,21 @@ export const AdminProductsPage = () => {
                 </tr>
               ) : (
                 filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-cream-50/40 transition">
+                  <tr key={product.id || product._id} className="hover:bg-cream-50/40 transition">
                     <td className="py-3 px-6">
                       <div className="flex items-center gap-3">
                         <img
                           src={product.images?.[0] || 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=800&auto=format&fit=crop&q=80'}
                           alt={product.name}
                           className="w-12 h-12 rounded-xl object-cover border border-cream-200 shrink-0"
+                          onError={e => { e.target.src = 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=800&auto=format&fit=crop&q=80'; }}
                         />
                         <div className="min-w-0">
                           <span className="font-semibold text-walnut-900 block truncate max-w-xs">
                             {product.name}
                           </span>
                           <span className="text-[11px] text-walnut-400">
-                            {product.images?.length || 1} {product.images?.length === 1 ? 'image' : 'images'} • ID: {product.id.slice(0, 14)}...
+                            {product.images?.length || 1} {product.images?.length === 1 ? 'image' : 'images'} • ID: {(product.id || '').slice(0, 14)}...
                           </span>
                         </div>
                       </div>
@@ -221,7 +288,7 @@ export const AdminProductsPage = () => {
       <ConfirmModal
         isOpen={Boolean(productToDelete)}
         title="Delete Craft Product"
-        message={`Are you sure you want to delete "${productToDelete?.name}"? This action will remove it permanently and immediately update the public website.`}
+        message={`Are you sure you want to delete "${productToDelete?.name}"? This action will remove it permanently from MongoDB Atlas and immediately update the public website.`}
         confirmText="Yes, Delete Product"
         cancelText="Cancel"
         onConfirm={handleDeleteConfirm}

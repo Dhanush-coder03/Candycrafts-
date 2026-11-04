@@ -1,6 +1,6 @@
 /**
- * Candy Crafts Dual-Layer Storage Utility
- * Provides persistent local fallback and syncing with live server / MongoDB API.
+ * Storage disabled by requirement — Pure DB and in-memory operation only.
+ * No caching or local persistence.
  */
 
 export const STORAGE_KEYS = {
@@ -14,51 +14,6 @@ export const STORAGE_KEYS = {
   REVIEWS: 'craft_reviews'
 };
 
-/**
- * Read from localStorage with error safety and fallback
- */
-export const getFromStorage = (key, fallback = null) => {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return fallback;
-  }
-  try {
-    const item = window.localStorage.getItem(key);
-    if (item === null || item === undefined) return fallback;
-    return JSON.parse(item);
-  } catch (err) {
-    console.warn(`Error reading ${key} from storage:`, err);
-    return fallback;
-  }
-};
-
-/**
- * Save data to localStorage with error safety
- */
-export const saveToStorage = (key, data) => {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return false;
-  }
-  try {
-    window.localStorage.setItem(key, JSON.stringify(data));
-    return true;
-  } catch (err) {
-    console.warn(`Error saving ${key} to storage:`, err);
-    return false;
-  }
-};
-
-/**
- * Remove an item from localStorage
- */
-export const removeFromStorage = (key) => {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return false;
-  }
-  try {
-    window.localStorage.removeItem(key);
-    return true;
-  } catch (err) {
-    console.warn(`Error removing ${key} from storage:`, err);
-    return false;
-  }
-};
+export const getFromStorage = (_key, fallback = null) => fallback;
+export const saveToStorage = (_key, _data) => true;
+export const removeFromStorage = (_key) => true;

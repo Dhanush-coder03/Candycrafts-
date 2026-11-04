@@ -1,9 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_PRODUCTS } from '../data/initialProducts';
-import { INITIAL_CATEGORIES } from '../data/categories';
-import { getFromStorage, saveToStorage, STORAGE_KEYS } from '../utils/storage';
+/**
+ * ProductContext — Pure MongoDB Backend State
+ *
+ * Rules:
+ *  - NO localStorage, NO cache, NO sessionStorage
+ *  - All state comes directly from and is written to MongoDB via API
+ *  - Optimistic UI: show changes immediately in UI, confirm/rollback with DB response
+ *  - On every mount, fetch fresh data from DB (no stale seed data shown)
+ */
+
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
 
+// ─── Fallback defaults shown ONLY while loading from DB ───────────────────────
 const DEFAULT_CONTACT_INFO = {
   brandName: 'Candy Crafts',
   tagline: 'Artisan Studio & Workshop',
@@ -18,191 +26,99 @@ const DEFAULT_CONTACT_INFO = {
   instagramHandle: '@candycrafts2026'
 };
 
-const INITIAL_INQUIRIES = [
-  {
-    id: 'inq_001',
-    name: 'Ananya Sharma',
-    email: 'ananya.sharma@example.com',
-    phone: '+91 98111 22334',
-    subject: 'Custom Blush Wedding Bouquet Inquiry',
-    message: 'Hello! I am planning a vintage garden wedding in December and would love to customize 3 bridesmaid bouquets matching dusty rose and ivory tones.',
-    type: 'Custom Craft Request',
-    createdAt: '2026-03-12T09:30:00.000Z',
-    read: false
-  },
-  {
-    id: 'inq_002',
-    name: 'Rohan Mehra',
-    email: 'rohan.m@example.com',
-    phone: '+91 98222 33445',
-    subject: 'Ganesha Clay Idol Delivery Time',
-    message: 'Can this terracotta idol be delivered to Bangalore within 4 days? It is a housewarming gift for my parents.',
-    type: 'Store Inquiry',
-    createdAt: '2026-03-14T14:15:00.000Z',
-    read: true
-  }
-];
-
-const INITIAL_ORDERS = [
-  {
-    id: 'ORD-2026-1082',
-    customerName: 'Priya Sundaram',
-    customerPhone: '+91 98401 23456',
-    customerEmail: 'priya.sundaram@gmail.com',
-    shippingAddress: 'Flat 302, Lotus Enclave, 12th Cross Street, Anna Nagar, Chennai - 600040',
-    notes: 'Please wrap with lavender ribbon, it is an anniversary gift!',
-    items: [
-      {
-        id: 'candy-p01',
-        name: 'Pastel Blush Botanical Bouquet',
-        price: 2499,
-        quantity: 1,
-        image: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=800&auto=format&fit=crop&q=80',
-        category: 'Floral Bouquets'
-      }
-    ],
-    totalAmount: 2499,
-    status: 'Pending',
-    createdAt: '2026-03-14T10:20:00.000Z'
-  },
-  {
-    id: 'ORD-2026-1081',
-    customerName: 'Karthik Raja',
-    customerPhone: '+91 94441 55667',
-    customerEmail: 'karthik.raja92@gmail.com',
-    shippingAddress: 'Plot 45, Green Meadows, Peelamedu, Coimbatore - 641004',
-    notes: 'Call before delivery.',
-    items: [
-      {
-        id: 'candy-p03',
-        name: 'Artisanal Clay Ganesha Idol with Brass Accent',
-        price: 1899,
-        quantity: 1,
-        image: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=800&auto=format&fit=crop&q=80',
-        category: 'Decorative Idols'
-      }
-    ],
-    totalAmount: 1899,
-    status: 'Delivered',
-    createdAt: '2026-03-12T16:45:00.000Z'
-  }
-];
-
 const ProductContext = createContext(null);
 
 export const ProductProvider = ({ children }) => {
-  // Dual-layer state initialization (Persistent localStorage + Live MongoDB sync)
-  const [products, setProducts] = useState(() => getFromStorage(STORAGE_KEYS.PRODUCTS, INITIAL_PRODUCTS));
-  const [categories, setCategories] = useState(() => getFromStorage(STORAGE_KEYS.CATEGORIES, INITIAL_CATEGORIES));
-  const [contactInfo, setContactInfo] = useState(() => getFromStorage(STORAGE_KEYS.CONTACT_INFO, DEFAULT_CONTACT_INFO));
-  const [inquiries, setInquiries] = useState(() => getFromStorage(STORAGE_KEYS.INQUIRIES, INITIAL_INQUIRIES));
-  const [orders, setOrders] = useState(() => getFromStorage(STORAGE_KEYS.ORDERS, INITIAL_ORDERS));
-  const [reviews, setReviews] = useState(() => getFromStorage(STORAGE_KEYS.REVIEWS, []));
 
-  // Toast state
-  const [toast, setToast] = useState(null);
+  // ─── State — all sourced from MongoDB, starts empty / default ──────────────
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [contactInfo, setContactInfo] = useState(DEFAULT_CONTACT_INFO);
 
-  const showToast = (message, type = 'success') => {
-    setToast({ id: Date.now(), message, type });
-  };
-
-  const closeToast = () => {
-    setToast(null);
-  };
-
-  // Backend API and Database Connection Status
+  // Loading states
+  const [loading, setLoading] = useState({ products: true, categories: true, orders: true });
   const [serverStatus, setServerStatus] = useState({ online: false, dbConnected: false, checked: false });
 
-  // Dedicated function to fetch freshest orders directly from MongoDB Atlas
-  const refreshOrders = async () => {
-    try {
-      const r = await api.getOrders();
-      if (r?.data && Array.isArray(r.data)) {
-        setOrders(prev => {
-          const serverIds = new Set(r.data.map(o => o.id));
-          const localPending = prev.filter(o => !serverIds.has(o.id));
-          const merged = [...r.data, ...localPending];
-          saveToStorage(STORAGE_KEYS.ORDERS, merged);
-          return merged;
-        });
-        return { success: true, count: r.data.length };
-      }
-    } catch (err) {
-      console.warn('Could not sync orders from server:', err.message);
-      return { success: false, error: err.message };
-    }
-  };
+  // Toast
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => setToast({ id: Date.now(), message, type });
+  const closeToast = () => setToast(null);
 
-  // Probe backend server & sync from MongoDB
+  // ─── INITIAL LOAD — fetch everything from MongoDB on mount ────────────────
   useEffect(() => {
-    let isMounted = true;
+    let alive = true;
 
-    // 1. Immediately attempt to fetch orders and products regardless of health probe
-    refreshOrders();
-
-    api.getProducts().then(r => {
-      if (isMounted && r?.data && Array.isArray(r.data)) {
-        // Always replace with server truth
-        setProducts(r.data);
-        saveToStorage(STORAGE_KEYS.PRODUCTS, r.data);
-      }
-    }).catch(() => {});
-
-    api.getCategories().then(r => {
-      if (isMounted && r?.data && Array.isArray(r.data)) {
-        // Always replace with server truth — server is source of truth
-        setCategories(r.data);
-        saveToStorage(STORAGE_KEYS.CATEGORIES, r.data);
-      }
-    }).catch(() => {});
-
-    api.getInquiries().then(r => {
-      if (isMounted && r?.data && r.data.length > 0) {
-        setInquiries(r.data);
-        saveToStorage(STORAGE_KEYS.INQUIRIES, r.data);
-      }
-    }).catch(() => {});
-
-    api.getContactInfo().then(r => {
-      if (isMounted && r?.data) {
-        setContactInfo(r.data);
-        saveToStorage(STORAGE_KEYS.CONTACT_INFO, r.data);
-      }
-    }).catch(() => {});
-
-    api.getReviews().then(r => {
-      if (isMounted && r?.data && Array.isArray(r.data)) {
-        setReviews(r.data);
-        saveToStorage(STORAGE_KEYS.REVIEWS, r.data);
-      }
-    }).catch(() => {});
-
-    // 2. Run server health check
-    api.checkHealth()
-      .then(res => {
-        if (!isMounted) return;
-        const isOnline = res.online;
-        const dbConnected = res.data?.dbState === 'connected';
-        setServerStatus({ online: isOnline, dbConnected, checked: true });
-      })
-      .catch(() => {
-        if (isMounted) setServerStatus({ online: false, dbConnected: false, checked: true });
+    const loadAll = async () => {
+      // 1. Health check
+      api.checkHealth().then(res => {
+        if (!alive) return;
+        setServerStatus({
+          online: res.online,
+          dbConnected: res.data?.dbState === 'connected',
+          checked: true
+        });
+      }).catch(() => {
+        if (alive) setServerStatus({ online: false, dbConnected: false, checked: true });
       });
 
-    return () => { isMounted = false; };
+      // 2. Products
+      api.getProducts().then(r => {
+        if (alive && r?.data) {
+          setProducts(r.data);
+          setLoading(prev => ({ ...prev, products: false }));
+        }
+      }).catch(() => setLoading(prev => ({ ...prev, products: false })));
+
+      // 3. Categories
+      api.getCategories().then(r => {
+        if (alive && r?.data) {
+          setCategories(r.data);
+          setLoading(prev => ({ ...prev, categories: false }));
+        }
+      }).catch(() => setLoading(prev => ({ ...prev, categories: false })));
+
+      // 4. Orders
+      api.getOrders().then(r => {
+        if (alive && r?.data) {
+          setOrders(r.data);
+          setLoading(prev => ({ ...prev, orders: false }));
+        }
+      }).catch(() => setLoading(prev => ({ ...prev, orders: false })));
+
+      // 5. Inquiries
+      api.getInquiries().then(r => {
+        if (alive && r?.data) setInquiries(r.data);
+      }).catch(() => {});
+
+      // 6. Contact Info
+      api.getContactInfo().then(r => {
+        if (alive && r?.data) setContactInfo(r.data);
+      }).catch(() => {});
+
+      // 7. Reviews
+      api.getReviews().then(r => {
+        if (alive && r?.data) setReviews(r.data);
+      }).catch(() => {});
+    };
+
+    loadAll();
+    return () => { alive = false; };
   }, []);
 
-  // Ensure products calculate rating & count dynamically from actual reviews
+  // ─── Reviews: auto-compute rating on products when reviews change ──────────
   useEffect(() => {
+    if (reviews.length === 0) return;
     setProducts(prev => {
       let changed = false;
       const updated = prev.map(p => {
-        const prodReviews = reviews.filter(r => r.productId === p.id || r.productId === p._id);
-        const count = prodReviews.length;
+        const pReviews = reviews.filter(r => r.productId === p.id || r.productId === p._id);
+        const count = pReviews.length;
         const avg = count > 0
-          ? Number((prodReviews.reduce((sum, r) => sum + Number(r.rating), 0) / count).toFixed(1))
-          : 0;
-
+          ? Number((pReviews.reduce((s, r) => s + Number(r.rating), 0) / count).toFixed(1))
+          : p.rating || 0;
         if (p.reviewsCount !== count || p.rating !== avg) {
           changed = true;
           return { ...p, rating: avg, reviewsCount: count };
@@ -213,375 +129,205 @@ export const ProductProvider = ({ children }) => {
     });
   }, [reviews]);
 
+  // ─── REFRESH helpers ───────────────────────────────────────────────────────
+  const refreshOrders = useCallback(async () => {
+    try {
+      const r = await api.getOrders();
+      if (r?.data) { setOrders(r.data); return { success: true, count: r.data.length }; }
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
 
+  const refreshCategories = useCallback(async () => {
+    try {
+      const r = await api.getCategories();
+      if (r?.data) { setCategories(r.data); return { success: true, data: r.data }; }
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
 
-  // CRUD Operations on Products
+  const refreshProducts = useCallback(async () => {
+    try {
+      const r = await api.getProducts();
+      if (r?.data) { setProducts(r.data); return { success: true, count: r.data.length }; }
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  // ─── PRODUCTS CRUD ─────────────────────────────────────────────────────────
+
   const addProduct = async (productData) => {
     const tempId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const newProduct = {
+    const optimistic = {
       ...productData,
       id: tempId,
       createdAt: new Date().toISOString(),
-      rating: productData.rating || 0,
-      reviewsCount: productData.reviewsCount || 0,
-      available: productData.available !== undefined ? productData.available : true,
-      featured: productData.featured !== undefined ? productData.featured : false,
-      images: productData.images && productData.images.length > 0
+      rating: 0,
+      reviewsCount: 0,
+      available: productData.available !== false,
+      featured: productData.featured === true,
+      images: productData.images?.length > 0
         ? productData.images
-        : ["https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=800&auto=format&fit=crop&q=80"]
+        : ['https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=800&auto=format&fit=crop&q=80']
     };
 
-    // Optimistic update
-    setProducts(prev => {
-      const updated = [newProduct, ...prev];
-      saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
-      return updated;
-    });
-    showToast(`"${newProduct.name}" added successfully!`, 'success');
+    setProducts(prev => [optimistic, ...prev]);
+    showToast(`"${optimistic.name}" added!`, 'success');
 
     try {
-      const res = await api.createProduct(newProduct);
+      const res = await api.createProduct(optimistic);
       if (res?.data) {
-        setProducts(prev => {
-          const updated = prev.map(p => p.id === tempId ? res.data : p);
-          saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
-          return updated;
-        });
+        setProducts(prev => prev.map(p => p.id === tempId ? res.data : p));
         return res.data;
       }
     } catch (err) {
-      console.warn('Backend sync notice (Product create):', err.message);
+      // Rollback
+      setProducts(prev => prev.filter(p => p.id !== tempId));
+      showToast(`Failed to add product: ${err.message}`, 'error');
+      throw err;
     }
-    return newProduct;
+    return optimistic;
   };
 
   const updateProduct = async (id, updatedData) => {
-    // Optimistic update
-    setProducts(prev => {
-      const updated = prev.map(item => (item.id === id ? { ...item, ...updatedData, updatedAt: new Date().toISOString() } : item));
-      saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
-      return updated;
-    });
-    showToast('Product updated successfully!', 'success');
+    const original = products.find(p => p.id === id);
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updatedData } : p));
+    showToast('Product updated!', 'success');
 
     try {
       const res = await api.updateProduct(id, updatedData);
       if (res?.data) {
-        setProducts(prev => {
-          const updated = prev.map(p => p.id === id ? res.data : p);
-          saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
-          return updated;
-        });
+        setProducts(prev => prev.map(p => p.id === id ? res.data : p));
       }
     } catch (err) {
-      console.warn('Backend sync notice (Update Product):', err.message);
+      // Rollback
+      if (original) setProducts(prev => prev.map(p => p.id === id ? original : p));
+      showToast(`Update failed: ${err.message}`, 'error');
+      throw err;
     }
   };
 
   const deleteProduct = async (id) => {
-    const toDelete = products.find(p => p.id === id);
-    // Optimistic update
-    setProducts(prev => {
-      const updated = prev.filter(item => item.id !== id);
-      saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
-      return updated;
-    });
-    showToast(toDelete ? `"${toDelete.name}" deleted.` : 'Product removed.', 'info');
+    const original = products.find(p => p.id === id);
+    setProducts(prev => prev.filter(p => p.id !== id));
+    showToast(original ? `"${original.name}" deleted.` : 'Product deleted.', 'info');
 
     try {
       await api.deleteProduct(id);
     } catch (err) {
-      console.warn('Backend sync notice (Delete Product):', err.message);
       // Rollback
-      if (toDelete) {
-        setProducts(prev => {
-          const rolled = [toDelete, ...prev];
-          saveToStorage(STORAGE_KEYS.PRODUCTS, rolled);
-          return rolled;
-        });
-        showToast('Delete failed — product restored.', 'error');
-      }
+      if (original) setProducts(prev => [original, ...prev]);
+      showToast(`Delete failed: ${err.message}`, 'error');
+      throw err;
     }
   };
 
-  const toggleFeatured = (id) => {
-    setProducts(prev =>
-      prev.map(item => {
-        if (item.id === id) {
-          const updated = { ...item, featured: !item.featured };
-          api.updateProduct(id, { featured: updated.featured }).catch(() => {});
-          return updated;
-        }
-        return item;
-      })
-    );
-  };
-
-  const toggleAvailability = (id) => {
-    setProducts(prev =>
-      prev.map(item => {
-        if (item.id === id) {
-          const updated = { ...item, available: !item.available };
-          api.updateProduct(id, { available: updated.available }).catch(() => {});
-          return updated;
-        }
-        return item;
-      })
-    );
-  };
-
-  // Customer Review Management
-  const addReview = async (productId, reviewData) => {
-    const product = products.find(p => p.id === productId || p._id === productId);
-    const targetProductId = product ? product.id : productId;
-    const targetProductName = product ? product.name : (reviewData.productName || 'Artisan Craft');
-
-    const newReview = {
-      id: `rev_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      _id: `rev_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      productId: targetProductId,
-      productName: targetProductName,
-      customerName: reviewData.customerName?.trim() || 'Valued Patron',
-      rating: Number(reviewData.rating) || 5,
-      comment: reviewData.comment?.trim() || '',
-      createdAt: new Date().toISOString()
-    };
-
-    setReviews(prev => [newReview, ...prev]);
-    showToast('Thank you! Your customer review has been added.', 'success');
-
-    // Async sync to MongoDB
-    api.createReview(targetProductId, {
-      customerName: newReview.customerName,
-      rating: newReview.rating,
-      comment: newReview.comment,
-      productName: targetProductName
-    }).then(res => {
-      if (res?.data?._id) {
-        // Update review with real Mongo _id if available
-        setReviews(prev => prev.map(r => r.id === newReview.id ? { ...r, _id: res.data._id } : r));
-      }
-    }).catch(err => {
-      console.warn('Backend sync notice (Create Review):', err.message);
-    });
-
-    return newReview;
-  };
-
-  const deleteReview = (reviewId) => {
-    const toDelete = reviews.find(r => r.id === reviewId || r._id === reviewId);
-    setReviews(prev => prev.filter(r => r.id !== reviewId && r._id !== reviewId));
-    showToast('Customer review removed.', 'info');
-
-    if (toDelete) {
-      api.deleteReview(toDelete._id || toDelete.id).catch(err => {
-        console.warn('Backend sync notice (Delete Review):', err.message);
-      });
-    }
-  };
-
-  const getProductReviews = (productId) => {
-    return reviews.filter(r => r.productId === productId);
-  };
-
-  const resetToDefaultData = () => {
-    setProducts(INITIAL_PRODUCTS);
-    setCategories(INITIAL_CATEGORIES);
-    setContactInfo(DEFAULT_CONTACT_INFO);
-    setInquiries(INITIAL_INQUIRIES);
-    setReviews([]);
-    showToast('Store reset to initial curated handmade catalog!', 'info');
-  };
-
-  const getProductById = (id) => {
-    return products.find(p => p.id === id);
-  };
-
-  const getFeaturedProducts = () => {
-    return products.filter(p => p.featured);
-  };
-
-  // Sync categories from MongoDB and persist to localStorage
-  const refreshCategories = async () => {
+  const toggleFeatured = async (id) => {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    setProducts(prev => prev.map(x => x.id === id ? { ...x, featured: !x.featured } : x));
     try {
-      const r = await api.getCategories();
-      if (r?.data && Array.isArray(r.data)) {
-        setCategories(r.data);
-        saveToStorage(STORAGE_KEYS.CATEGORIES, r.data);
-        return { success: true, data: r.data };
-      }
-    } catch (err) {
-      console.warn('Could not sync categories from server:', err.message);
-      return { success: false, error: err.message };
+      await api.updateProduct(id, { featured: !p.featured });
+    } catch {
+      setProducts(prev => prev.map(x => x.id === id ? { ...x, featured: p.featured } : x));
     }
   };
 
-  // Categories — await API, then re-sync full list from DB
+  const toggleAvailability = async (id) => {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    setProducts(prev => prev.map(x => x.id === id ? { ...x, available: !x.available } : x));
+    try {
+      await api.updateProduct(id, { available: !p.available });
+    } catch {
+      setProducts(prev => prev.map(x => x.id === id ? { ...x, available: p.available } : x));
+    }
+  };
+
+  const getProductById = (id) => products.find(p => p.id === id || p._id === id);
+  const getFeaturedProducts = () => products.filter(p => p.featured);
+
+  // ─── CATEGORIES CRUD ───────────────────────────────────────────────────────
+
   const addCategory = async (categoryData) => {
     const tempId = `cat_${Date.now()}`;
     const slug = categoryData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const optimisticCat = {
-      ...categoryData,
-      id: tempId,
-      slug,
-      itemCount: 0,
-      createdAt: new Date().toISOString()
-    };
+    const optimistic = { ...categoryData, id: tempId, slug, itemCount: 0, createdAt: new Date().toISOString() };
 
-    // Optimistic UI update
-    setCategories(prev => {
-      const updated = [...prev, optimisticCat];
-      saveToStorage(STORAGE_KEYS.CATEGORIES, updated);
-      return updated;
-    });
-    showToast(`Category "${optimisticCat.name}" added!`, 'success');
+    setCategories(prev => [...prev, optimistic]);
+    showToast(`Category "${optimistic.name}" added!`, 'success');
 
     try {
-      const res = await api.createCategory(optimisticCat);
+      const res = await api.createCategory(optimistic);
       if (res?.data) {
-        // Replace optimistic entry with real server data (real _id, slug, etc.)
-        setCategories(prev => {
-          const updated = prev.map(c => c.id === tempId ? res.data : c);
-          saveToStorage(STORAGE_KEYS.CATEGORIES, updated);
-          return updated;
-        });
+        setCategories(prev => prev.map(c => c.id === tempId ? res.data : c));
+        return res.data;
       }
     } catch (err) {
-      console.warn('Backend sync notice (Category create):', err.message);
-      // Keep the optimistic entry — it will sync next reload
+      // Rollback
+      setCategories(prev => prev.filter(c => c.id !== tempId));
+      showToast(`Failed to add category: ${err.message}`, 'error');
+      throw err;
     }
+    return optimistic;
   };
 
   const updateCategory = async (id, updatedData) => {
-    let oldCategoryName = null;
-    // Optimistic UI update
-    setCategories(prev => {
-      const updated = prev.map(cat => {
-        if (cat.id === id || cat.slug === id) {
-          oldCategoryName = cat.name;
-          const slug = updatedData.name
-            ? updatedData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-            : cat.slug;
-          return { ...cat, ...updatedData, slug, updatedAt: new Date().toISOString() };
-        }
-        return cat;
-      });
-      saveToStorage(STORAGE_KEYS.CATEGORIES, updated);
-      return updated;
-    });
+    const original = categories.find(c => c.id === id || c.slug === id);
+    const oldName = original?.name;
 
-    // Update products that belong to this category if name changed
-    if (updatedData.name && oldCategoryName && updatedData.name !== oldCategoryName) {
-      setProducts(prev => {
-        const updated = prev.map(p => (p.category === oldCategoryName ? { ...p, category: updatedData.name } : p));
-        saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
-        return updated;
-      });
+    const slug = updatedData.name
+      ? updatedData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      : original?.slug;
+
+    setCategories(prev => prev.map(c =>
+      (c.id === id || c.slug === id) ? { ...c, ...updatedData, slug } : c
+    ));
+
+    // If name changed, update products category field in memory
+    if (updatedData.name && oldName && updatedData.name !== oldName) {
+      setProducts(prev => prev.map(p => p.category === oldName ? { ...p, category: updatedData.name } : p));
     }
 
-    showToast('Category updated successfully!', 'success');
+    showToast('Category updated!', 'success');
 
     try {
       const res = await api.updateCategory(id, updatedData);
       if (res?.data) {
-        // Confirm with real server data
-        setCategories(prev => {
-          const updated = prev.map(c => (c.id === id || c.slug === id) ? res.data : c);
-          saveToStorage(STORAGE_KEYS.CATEGORIES, updated);
-          return updated;
-        });
+        setCategories(prev => prev.map(c => (c.id === id || c.slug === id) ? res.data : c));
       }
     } catch (err) {
-      console.warn('Backend sync notice (Category update):', err.message);
+      // Rollback
+      if (original) setCategories(prev => prev.map(c => (c.id === id || c.slug === id) ? original : c));
+      showToast(`Update failed: ${err.message}`, 'error');
+      throw err;
     }
   };
 
   const deleteCategory = async (id) => {
-    const toDelete = categories.find(c => c.id === id || c.slug === id);
-    // Optimistic UI update
-    setCategories(prev => {
-      const updated = prev.filter(c => c.id !== id && c.slug !== id);
-      saveToStorage(STORAGE_KEYS.CATEGORIES, updated);
-      return updated;
-    });
-    showToast(toDelete ? `Category "${toDelete.name}" removed.` : 'Category removed.', 'info');
+    const original = categories.find(c => c.id === id || c.slug === id);
+    setCategories(prev => prev.filter(c => c.id !== id && c.slug !== id));
+    showToast(original ? `"${original.name}" removed.` : 'Category removed.', 'info');
 
     try {
       await api.deleteCategory(id);
     } catch (err) {
-      console.warn('Backend sync notice (Category delete):', err.message);
-      // Rollback on failure
-      if (toDelete) {
-        setCategories(prev => {
-          const rolled = [...prev, toDelete];
-          saveToStorage(STORAGE_KEYS.CATEGORIES, rolled);
-          return rolled;
-        });
-        showToast('Delete failed — category restored.', 'error');
-      }
+      // Rollback
+      if (original) setCategories(prev => [...prev, original]);
+      showToast(`Delete failed: ${err.message}`, 'error');
+      throw err;
     }
   };
 
-  // Contact Info Management (Admin can edit, immediately updates public store)
-  const updateContactInfo = async (newInfo) => {
-    setContactInfo(prev => ({ ...prev, ...newInfo }));
+  // ─── ORDERS CRUD ───────────────────────────────────────────────────────────
 
-    try {
-      const res = await api.updateContactInfo(newInfo);
-      if (res?.data) {
-        setContactInfo(res.data);
-      }
-      showToast('Contact and email settings saved!', 'success');
-      return res;
-    } catch (err) {
-      console.warn('Backend sync notice (Contact):', err.message);
-      showToast('Settings saved! (Local store updated)', 'success');
-      return { success: true, localOnly: true };
-    }
-  };
-
-  // Customer Inquiries & Messages
-  const addInquiry = (inquiryData) => {
-    const newInquiry = {
-      ...inquiryData,
-      id: `inq_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      createdAt: new Date().toISOString(),
-      read: false
-    };
-    setInquiries(prev => [newInquiry, ...prev]);
-
-    // Async sync to MongoDB & triggers Nodemailer
-    api.createInquiry(newInquiry).catch(err => {
-      console.warn('Backend sync notice (Inquiry):', err.message);
-    });
-
-    return newInquiry;
-  };
-
-  const deleteInquiry = (id) => {
-    setInquiries(prev => prev.filter(inq => inq.id !== id));
-    showToast('Message removed from records.', 'info');
-
-    api.deleteInquiry(id).catch(err => {
-      console.warn('Backend sync notice (Delete Inquiry):', err.message);
-    });
-  };
-
-  const toggleInquiryRead = (id) => {
-    setInquiries(prev =>
-      prev.map(inq => (inq.id === id ? { ...inq, read: !inq.read } : inq))
-    );
-
-    api.toggleInquiryRead(id).catch(err => {
-      console.warn('Backend sync notice (Toggle Read):', err.message);
-    });
-  };
-
-  // Orders Management
   const placeOrder = async (orderData) => {
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const newOrder = {
-      id: `ORD-2026-${randomSuffix}`,
+    const tempId = `ORD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const optimistic = {
+      id: tempId,
       customerName: orderData.customerName || 'Customer',
       customerPhone: orderData.customerPhone || '',
       customerEmail: orderData.customerEmail || '',
@@ -594,100 +340,231 @@ export const ProductProvider = ({ children }) => {
       createdAt: new Date().toISOString()
     };
 
-    // Immediately update in-memory state & persist to localStorage so Admin sees it without delay
-    setOrders(prev => {
-      const updated = [newOrder, ...prev.filter(o => o.id !== newOrder.id)];
-      saveToStorage(STORAGE_KEYS.ORDERS, updated);
-      return updated;
-    });
+    // Optimistic — show immediately in Admin
+    setOrders(prev => [optimistic, ...prev]);
+    showToast(`Order #${tempId} placed!`, 'success');
 
-    showToast(`Order #${newOrder.id} received! Check Admin Panel.`, 'success');
-
-    // Async sync to MongoDB Atlas & trigger WhatsApp dispatch
     try {
-      const res = await api.createOrder(newOrder);
+      const res = await api.createOrder(optimistic);
       if (res?.data) {
-        const savedOrder = { ...newOrder, ...res.data };
-        if (res.whatsapp) savedOrder.whatsapp = res.whatsapp;
-        setOrders(prev => {
-          const updated = prev.map(o => (o.id === newOrder.id ? savedOrder : o));
-          saveToStorage(STORAGE_KEYS.ORDERS, updated);
-          return updated;
-        });
-        return savedOrder;
+        const confirmed = { ...optimistic, ...res.data };
+        if (res.whatsapp) confirmed.whatsapp = res.whatsapp;
+        setOrders(prev => prev.map(o => o.id === tempId ? confirmed : o));
+        return confirmed;
       }
     } catch (err) {
-      console.warn('Backend sync notice (Order):', err.message);
+      console.warn('Order save notice:', err.message);
+      // Keep optimistic — user still needs WhatsApp to open
     }
 
-    return newOrder;
+    return optimistic;
   };
 
-  const updateOrderStatus = (orderId, newStatus) => {
-    setOrders(prev => {
-      const updated = prev.map(order =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      );
-      saveToStorage(STORAGE_KEYS.ORDERS, updated);
-      return updated;
-    });
-    showToast(`Order #${orderId} marked as ${newStatus}`, 'info');
+  const updateOrderStatus = async (orderId, newStatus) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    showToast(`Order #${orderId} → ${newStatus}`, 'info');
 
-    api.updateOrderStatus(orderId, newStatus).catch(err => {
-      console.warn('Backend sync notice (Update Status):', err.message);
-    });
+    try {
+      await api.updateOrderStatus(orderId, newStatus);
+    } catch (err) {
+      console.warn('Status update failed:', err.message);
+    }
   };
 
-  const deleteOrder = (orderId) => {
-    setOrders(prev => {
-      const updated = prev.filter(order => order.id !== orderId);
-      saveToStorage(STORAGE_KEYS.ORDERS, updated);
-      return updated;
-    });
-    showToast(`Order #${orderId} removed from records.`, 'info');
+  const deleteOrder = async (orderId) => {
+    const original = orders.find(o => o.id === orderId);
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+    showToast(`Order #${orderId} removed.`, 'info');
 
-    api.deleteOrder(orderId).catch(err => {
-      console.warn('Backend sync notice (Delete Order):', err.message);
-    });
+    try {
+      await api.deleteOrder(orderId);
+    } catch (err) {
+      // Rollback
+      if (original) setOrders(prev => [original, ...prev]);
+      showToast(`Delete failed: ${err.message}`, 'error');
+    }
   };
+
+  // ─── INQUIRIES CRUD ────────────────────────────────────────────────────────
+
+  const addInquiry = async (inquiryData) => {
+    const optimistic = {
+      ...inquiryData,
+      id: `inq_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: new Date().toISOString(),
+      read: false
+    };
+    setInquiries(prev => [optimistic, ...prev]);
+
+    try {
+      const res = await api.createInquiry(optimistic);
+      if (res?.data) {
+        setInquiries(prev => prev.map(i => i.id === optimistic.id ? res.data : i));
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Inquiry save notice:', err.message);
+    }
+    return optimistic;
+  };
+
+  const deleteInquiry = async (id) => {
+    const original = inquiries.find(i => i.id === id);
+    setInquiries(prev => prev.filter(i => i.id !== id));
+    showToast('Message removed.', 'info');
+
+    try {
+      await api.deleteInquiry(id);
+    } catch (err) {
+      if (original) setInquiries(prev => [original, ...prev]);
+      showToast(`Delete failed: ${err.message}`, 'error');
+    }
+  };
+
+  const toggleInquiryRead = async (id) => {
+    setInquiries(prev => prev.map(i => i.id === id ? { ...i, read: !i.read } : i));
+    try {
+      await api.toggleInquiryRead(id);
+    } catch (err) {
+      // Revert toggle
+      setInquiries(prev => prev.map(i => i.id === id ? { ...i, read: !i.read } : i));
+    }
+  };
+
+  // ─── REVIEWS CRUD ──────────────────────────────────────────────────────────
+
+  const addReview = async (productId, reviewData) => {
+    const product = products.find(p => p.id === productId || p._id === productId);
+    const targetId = product?.id || productId;
+    const targetName = product?.name || reviewData.productName || 'Artisan Craft';
+
+    const optimistic = {
+      id: `rev_${Date.now()}`,
+      _id: `rev_${Date.now()}`,
+      productId: targetId,
+      productName: targetName,
+      customerName: reviewData.customerName?.trim() || 'Valued Patron',
+      rating: Number(reviewData.rating) || 5,
+      comment: reviewData.comment?.trim() || '',
+      createdAt: new Date().toISOString()
+    };
+
+    setReviews(prev => [optimistic, ...prev]);
+    showToast('Review added!', 'success');
+
+    try {
+      const res = await api.createReview(targetId, {
+        customerName: optimistic.customerName,
+        rating: optimistic.rating,
+        comment: optimistic.comment,
+        productName: targetName
+      });
+      if (res?.data) {
+        setReviews(prev => prev.map(r => r.id === optimistic.id ? { ...r, ...res.data } : r));
+      }
+    } catch (err) {
+      console.warn('Review save notice:', err.message);
+    }
+    return optimistic;
+  };
+
+  const deleteReview = async (reviewId) => {
+    const original = reviews.find(r => r.id === reviewId || r._id === reviewId);
+    setReviews(prev => prev.filter(r => r.id !== reviewId && r._id !== reviewId));
+    showToast('Review removed.', 'info');
+
+    if (original) {
+      try {
+        await api.deleteReview(original._id || original.id);
+      } catch (err) {
+        if (original) setReviews(prev => [original, ...prev]);
+        showToast(`Delete failed: ${err.message}`, 'error');
+      }
+    }
+  };
+
+  const getProductReviews = (productId) => reviews.filter(r => r.productId === productId);
+
+  // ─── CONTACT INFO ──────────────────────────────────────────────────────────
+
+  const updateContactInfo = async (newInfo) => {
+    setContactInfo(prev => ({ ...prev, ...newInfo }));
+    try {
+      const res = await api.updateContactInfo(newInfo);
+      if (res?.data) setContactInfo(res.data);
+      showToast('Contact settings saved!', 'success');
+      return res;
+    } catch (err) {
+      showToast('Save failed — please try again.', 'error');
+      return { success: false, error: err.message };
+    }
+  };
+
+  // ─── MISC ──────────────────────────────────────────────────────────────────
+
+  const resetToDefaultData = () => {
+    // No-op in DB mode — seed data lives in MongoDB
+    showToast('Reset is not available in live DB mode.', 'info');
+  };
+
+  // ─── CONTEXT VALUE ─────────────────────────────────────────────────────────
 
   return (
     <ProductContext.Provider
       value={{
+        // Data
         products,
         categories,
-        contactInfo,
-        inquiries,
         orders,
+        inquiries,
+        reviews,
+        contactInfo,
+
+        // Status
         serverStatus,
+        loading,
         toast,
         showToast,
         closeToast,
+
+        // Products
         addProduct,
         updateProduct,
         deleteProduct,
         toggleFeatured,
         toggleAvailability,
-        resetToDefaultData,
         getProductById,
         getFeaturedProducts,
+        refreshProducts,
+
+        // Categories
         addCategory,
         updateCategory,
         deleteCategory,
         refreshCategories,
-        updateContactInfo,
-        addInquiry,
-        deleteInquiry,
-        toggleInquiryRead,
+
+        // Orders
         placeOrder,
         updateOrderStatus,
         deleteOrder,
         refreshOrders,
         notifyOrderWhatsApp: (id) => api.notifyOrderWhatsApp(id),
-        reviews,
+
+        // Inquiries
+        addInquiry,
+        deleteInquiry,
+        toggleInquiryRead,
+
+        // Reviews
         addReview,
         deleteReview,
-        getProductReviews
+        getProductReviews,
+
+        // Contact
+        updateContactInfo,
+
+        // Misc
+        resetToDefaultData,
       }}
     >
       {children}
@@ -697,8 +574,6 @@ export const ProductProvider = ({ children }) => {
 
 export const useProducts = () => {
   const context = useContext(ProductContext);
-  if (!context) {
-    throw new Error('useProducts must be used within a ProductProvider');
-  }
+  if (!context) throw new Error('useProducts must be used within a ProductProvider');
   return context;
 };

@@ -19,6 +19,7 @@ export const HomePage = () => {
   const { setIsCustomOrderOpen } = useCartWishlist();
 
   const featuredProducts = products.filter(p => p.featured).slice(0, 8);
+  const displayProducts = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 8);
 
   const whyChooseUsFeatures = [
     {
@@ -203,8 +204,8 @@ export const HomePage = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+            {displayProducts.map((product) => (
+              <ProductCard key={product.id || product._id} product={product} />
             ))}
           </div>
         </div>

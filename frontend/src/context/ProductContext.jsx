@@ -141,14 +141,16 @@ export const ProductProvider = ({ children }) => {
     refreshOrders();
 
     api.getProducts().then(r => {
-      if (isMounted && r?.data && r.data.length > 0) {
+      if (isMounted && r?.data && Array.isArray(r.data)) {
+        // Always replace with server truth
         setProducts(r.data);
         saveToStorage(STORAGE_KEYS.PRODUCTS, r.data);
       }
     }).catch(() => {});
 
     api.getCategories().then(r => {
-      if (isMounted && r?.data && r.data.length > 0) {
+      if (isMounted && r?.data && Array.isArray(r.data)) {
+        // Always replace with server truth — server is source of truth
         setCategories(r.data);
         saveToStorage(STORAGE_KEYS.CATEGORIES, r.data);
       }
@@ -214,10 +216,11 @@ export const ProductProvider = ({ children }) => {
 
 
   // CRUD Operations on Products
-  const addProduct = (productData) => {
+  const addProduct = async (productData) => {
+    const tempId = `product_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const newProduct = {
       ...productData,
-      id: `product_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      id: tempId,
       createdAt: new Date().toISOString(),
       rating: productData.rating || 0,
       reviewsCount: productData.reviewsCount || 0,
@@ -228,38 +231,77 @@ export const ProductProvider = ({ children }) => {
         : ["https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=800&auto=format&fit=crop&q=80"]
     };
 
-    setProducts(prev => [newProduct, ...prev]);
+    // Optimistic update
+    setProducts(prev => {
+      const updated = [newProduct, ...prev];
+      saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
+      return updated;
+    });
     showToast(`"${newProduct.name}" added successfully!`, 'success');
 
-    // Async sync to MongoDB
-    api.createProduct(newProduct).catch(err => {
-      console.warn('Backend sync notice (Product):', err.message);
-    });
-
+    try {
+      const res = await api.createProduct(newProduct);
+      if (res?.data) {
+        setProducts(prev => {
+          const updated = prev.map(p => p.id === tempId ? res.data : p);
+          saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
+          return updated;
+        });
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Backend sync notice (Product create):', err.message);
+    }
     return newProduct;
   };
 
-  const updateProduct = (id, updatedData) => {
-    setProducts(prev =>
-      prev.map(item => (item.id === id ? { ...item, ...updatedData, updatedAt: new Date().toISOString() } : item))
-    );
+  const updateProduct = async (id, updatedData) => {
+    // Optimistic update
+    setProducts(prev => {
+      const updated = prev.map(item => (item.id === id ? { ...item, ...updatedData, updatedAt: new Date().toISOString() } : item));
+      saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
+      return updated;
+    });
     showToast('Product updated successfully!', 'success');
 
-    // Async sync to MongoDB
-    api.updateProduct(id, updatedData).catch(err => {
+    try {
+      const res = await api.updateProduct(id, updatedData);
+      if (res?.data) {
+        setProducts(prev => {
+          const updated = prev.map(p => p.id === id ? res.data : p);
+          saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
+          return updated;
+        });
+      }
+    } catch (err) {
       console.warn('Backend sync notice (Update Product):', err.message);
-    });
+    }
   };
 
-  const deleteProduct = (id) => {
+  const deleteProduct = async (id) => {
     const toDelete = products.find(p => p.id === id);
-    setProducts(prev => prev.filter(item => item.id !== id));
+    // Optimistic update
+    setProducts(prev => {
+      const updated = prev.filter(item => item.id !== id);
+      saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
+      return updated;
+    });
     showToast(toDelete ? `"${toDelete.name}" deleted.` : 'Product removed.', 'info');
 
-    // Async sync to MongoDB
-    api.deleteProduct(id).catch(err => {
+    try {
+      await api.deleteProduct(id);
+    } catch (err) {
       console.warn('Backend sync notice (Delete Product):', err.message);
-    });
+      // Rollback
+      if (toDelete) {
+        setProducts(prev => {
+          const rolled = [toDelete, ...prev];
+          saveToStorage(STORAGE_KEYS.PRODUCTS, rolled);
+          return rolled;
+        });
+        showToast('Delete failed — product restored.', 'error');
+      }
+    }
   };
 
   const toggleFeatured = (id) => {
@@ -359,26 +401,62 @@ export const ProductProvider = ({ children }) => {
     return products.filter(p => p.featured);
   };
 
-  // Categories
-  const addCategory = (categoryData) => {
-    const newCat = {
-      ...categoryData,
-      id: `cat_${Date.now()}`,
-      slug: categoryData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-      itemCount: 0
-    };
-    setCategories(prev => [...prev, newCat]);
-    showToast(`Category "${newCat.name}" added!`, 'success');
-
-    api.createCategory(newCat).catch(err => {
-      console.warn('Backend sync notice (Category):', err.message);
-    });
+  // Sync categories from MongoDB and persist to localStorage
+  const refreshCategories = async () => {
+    try {
+      const r = await api.getCategories();
+      if (r?.data && Array.isArray(r.data)) {
+        setCategories(r.data);
+        saveToStorage(STORAGE_KEYS.CATEGORIES, r.data);
+        return { success: true, data: r.data };
+      }
+    } catch (err) {
+      console.warn('Could not sync categories from server:', err.message);
+      return { success: false, error: err.message };
+    }
   };
 
-  const updateCategory = (id, updatedData) => {
+  // Categories — await API, then re-sync full list from DB
+  const addCategory = async (categoryData) => {
+    const tempId = `cat_${Date.now()}`;
+    const slug = categoryData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const optimisticCat = {
+      ...categoryData,
+      id: tempId,
+      slug,
+      itemCount: 0,
+      createdAt: new Date().toISOString()
+    };
+
+    // Optimistic UI update
+    setCategories(prev => {
+      const updated = [...prev, optimisticCat];
+      saveToStorage(STORAGE_KEYS.CATEGORIES, updated);
+      return updated;
+    });
+    showToast(`Category "${optimisticCat.name}" added!`, 'success');
+
+    try {
+      const res = await api.createCategory(optimisticCat);
+      if (res?.data) {
+        // Replace optimistic entry with real server data (real _id, slug, etc.)
+        setCategories(prev => {
+          const updated = prev.map(c => c.id === tempId ? res.data : c);
+          saveToStorage(STORAGE_KEYS.CATEGORIES, updated);
+          return updated;
+        });
+      }
+    } catch (err) {
+      console.warn('Backend sync notice (Category create):', err.message);
+      // Keep the optimistic entry — it will sync next reload
+    }
+  };
+
+  const updateCategory = async (id, updatedData) => {
     let oldCategoryName = null;
-    setCategories(prev =>
-      prev.map(cat => {
+    // Optimistic UI update
+    setCategories(prev => {
+      const updated = prev.map(cat => {
         if (cat.id === id || cat.slug === id) {
           oldCategoryName = cat.name;
           const slug = updatedData.name
@@ -387,33 +465,61 @@ export const ProductProvider = ({ children }) => {
           return { ...cat, ...updatedData, slug, updatedAt: new Date().toISOString() };
         }
         return cat;
-      })
-    );
+      });
+      saveToStorage(STORAGE_KEYS.CATEGORIES, updated);
+      return updated;
+    });
 
-    // If category name changed, update all products that belong to old category
+    // Update products that belong to this category if name changed
     if (updatedData.name && oldCategoryName && updatedData.name !== oldCategoryName) {
-      setProducts(prev =>
-        prev.map(p => (p.category === oldCategoryName ? { ...p, category: updatedData.name } : p))
-      );
+      setProducts(prev => {
+        const updated = prev.map(p => (p.category === oldCategoryName ? { ...p, category: updatedData.name } : p));
+        saveToStorage(STORAGE_KEYS.PRODUCTS, updated);
+        return updated;
+      });
     }
 
-    showToast(`Category updated successfully!`, 'success');
+    showToast('Category updated successfully!', 'success');
 
-    // Async sync to MongoDB
-    api.updateCategory(id, updatedData).catch(err => {
-      console.warn('Backend sync notice (Update Category):', err.message);
-    });
+    try {
+      const res = await api.updateCategory(id, updatedData);
+      if (res?.data) {
+        // Confirm with real server data
+        setCategories(prev => {
+          const updated = prev.map(c => (c.id === id || c.slug === id) ? res.data : c);
+          saveToStorage(STORAGE_KEYS.CATEGORIES, updated);
+          return updated;
+        });
+      }
+    } catch (err) {
+      console.warn('Backend sync notice (Category update):', err.message);
+    }
   };
 
-  const deleteCategory = (id) => {
+  const deleteCategory = async (id) => {
     const toDelete = categories.find(c => c.id === id || c.slug === id);
-    setCategories(prev => prev.filter(c => c.id !== id && c.slug !== id));
+    // Optimistic UI update
+    setCategories(prev => {
+      const updated = prev.filter(c => c.id !== id && c.slug !== id);
+      saveToStorage(STORAGE_KEYS.CATEGORIES, updated);
+      return updated;
+    });
     showToast(toDelete ? `Category "${toDelete.name}" removed.` : 'Category removed.', 'info');
 
-    // Async sync to MongoDB
-    api.deleteCategory(id).catch(err => {
-      console.warn('Backend sync notice (Delete Category):', err.message);
-    });
+    try {
+      await api.deleteCategory(id);
+    } catch (err) {
+      console.warn('Backend sync notice (Category delete):', err.message);
+      // Rollback on failure
+      if (toDelete) {
+        setCategories(prev => {
+          const rolled = [...prev, toDelete];
+          saveToStorage(STORAGE_KEYS.CATEGORIES, rolled);
+          return rolled;
+        });
+        showToast('Delete failed — category restored.', 'error');
+      }
+    }
   };
 
   // Contact Info Management (Admin can edit, immediately updates public store)
@@ -568,6 +674,7 @@ export const ProductProvider = ({ children }) => {
         addCategory,
         updateCategory,
         deleteCategory,
+        refreshCategories,
         updateContactInfo,
         addInquiry,
         deleteInquiry,

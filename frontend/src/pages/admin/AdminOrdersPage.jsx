@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  ShoppingBag, 
-  Search, 
-  Filter, 
-  Eye, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  CheckCircle2, 
-  Truck, 
-  AlertCircle, 
-  Trash2, 
-  X, 
-  MessageCircle, 
+import {
+  ShoppingBag,
+  Search,
+  Filter,
+  Eye,
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  Truck,
+  AlertCircle,
+  Trash2,
+  X,
+  MessageCircle,
   Sparkles,
   ExternalLink,
   ChevronDown,
@@ -67,7 +67,7 @@ export const AdminOrdersPage = () => {
   // Filtered Orders
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
-    const matchesSearch = 
+    const matchesSearch =
       order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerPhone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -87,7 +87,7 @@ export const AdminOrdersPage = () => {
 
   return (
     <div className="space-y-6">
-      
+
       {/* Top Banner & Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-3xl border border-cream-200 shadow-soft">
@@ -176,11 +176,10 @@ export const AdminOrdersPage = () => {
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition whitespace-nowrap ${
-                  statusFilter === status
-                    ? 'bg-terracotta-500 text-white shadow-xs'
-                    : 'bg-cream-100 text-walnut-600 hover:bg-cream-200'
-                }`}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition whitespace-nowrap ${statusFilter === status
+                  ? 'bg-terracotta-500 text-white shadow-xs'
+                  : 'bg-cream-100 text-walnut-600 hover:bg-cream-200'
+                  }`}
               >
                 {status === 'ALL' ? 'All Orders' : status}
               </button>
@@ -209,8 +208,8 @@ export const AdminOrdersPage = () => {
             </div>
             <h3 className="font-serif text-lg font-semibold text-walnut-800">No Orders Found</h3>
             <p className="text-xs text-walnut-500 max-w-sm mx-auto">
-              {searchTerm 
-                ? `No orders matching "${searchTerm}". Try a different name, phone, or Gmail.` 
+              {searchTerm
+                ? `No orders matching "${searchTerm}". Try a different name, phone, or Gmail.`
                 : 'When customers place orders from the store, they will appear here instantly.'}
             </p>
           </div>
@@ -232,8 +231,8 @@ export const AdminOrdersPage = () => {
                 {filteredOrders.map((order) => {
                   const statusStyle = STATUS_COLORS[order.status] || STATUS_COLORS.Pending;
                   return (
-                    <tr 
-                      key={order.id} 
+                    <tr
+                      key={order.id}
                       onClick={() => setSelectedOrder(order)}
                       className="hover:bg-cream-50/50 transition cursor-pointer group"
                     >
@@ -268,7 +267,7 @@ export const AdminOrdersPage = () => {
                       {/* Phone Number */}
                       <td className="py-4 px-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
-                          <a 
+                          <a
                             href={`tel:${order.customerPhone?.replace(/[^0-9+]/g, '')}`}
                             className="text-xs font-medium text-walnut-800 hover:text-terracotta-600 flex items-center gap-1 transition"
                             title="Call customer"

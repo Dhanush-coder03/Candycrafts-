@@ -5,13 +5,16 @@ import { Footer } from '../components/common/Footer';
 import { Toast } from '../components/common/Toast';
 import { CustomOrderModal } from '../components/common/CustomOrderModal';
 import { QuickViewModal } from '../components/common/QuickViewModal';
+import { ProductOrderModal } from '../components/products/ProductOrderModal';
 import { SearchModal } from '../components/products/SearchBar';
 import { useProducts } from '../context/ProductContext';
+import { useCartWishlist } from '../context/CartWishlistContext';
 
 export const PublicLayout = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { products } = useProducts();
+  const { orderNowProduct, closeOrderModal, orderNowQuantity } = useCartWishlist();
 
   const searchResults = searchQuery.trim()
     ? products.filter(
@@ -38,6 +41,12 @@ export const PublicLayout = () => {
       {/* Global Interactive Modals */}
       <CustomOrderModal />
       <QuickViewModal />
+      <ProductOrderModal
+        product={orderNowProduct}
+        isOpen={!!orderNowProduct}
+        onClose={closeOrderModal}
+        initialQuantity={orderNowQuantity || 1}
+      />
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}

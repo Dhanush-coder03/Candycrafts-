@@ -244,32 +244,18 @@ export const ProductDetailsPage = () => {
               </div>
             </div>
 
-            {/* Direct WhatsApp Order Button */}
+            {/* Order Now Action Button */}
             <button
-              onClick={() => {
-                const waUrl = generateDirectProductWhatsAppUrl(product, quantity, targetWhatsApp);
-                window.open(waUrl, '_blank');
-              }}
+              onClick={() => setIsOrderModalOpen(true)}
               className="w-full py-4 px-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-base shadow-soft hover:shadow-soft-md transition active:scale-[0.98] flex items-center justify-center gap-2.5 group cursor-pointer"
             >
               <MessageCircle className="w-5 h-5 fill-white/20 text-white group-hover:scale-110 transition-transform" />
-              <span>Order Now on WhatsApp</span>
+              <span>Order Now ({formatPrice(product.price * quantity)})</span>
             </button>
 
             <p className="text-center text-xs text-walnut-500">
-              Direct WhatsApp order to <strong className="text-walnut-700 font-semibold">+91 63820 91475</strong> with product details
+              Enter delivery details & continue directly to WhatsApp (<strong>+91 63820 91475</strong>)
             </p>
-
-            {/* Email inquiry option (paused as primary, kept as secondary alternative) */}
-            <div className="text-center pt-1">
-              <button
-                type="button"
-                onClick={() => setIsOrderModalOpen(true)}
-                className="text-[11px] text-walnut-400 hover:text-walnut-600 underline transition cursor-pointer"
-              >
-                Prefer email enquiry form instead?
-              </button>
-            </div>
           </div>
 
           {/* Guarantees List */}
@@ -399,7 +385,7 @@ export const ProductDetailsPage = () => {
         product={product}
         isOpen={isOrderModalOpen}
         onClose={() => setIsOrderModalOpen(false)}
-        initialQuantity={1}
+        initialQuantity={quantity}
       />
 
     </div>

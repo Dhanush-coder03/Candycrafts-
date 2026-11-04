@@ -3,9 +3,21 @@ import React, { createContext, useContext, useState } from 'react';
 const CartWishlistContext = createContext(null);
 
 export const CartWishlistProvider = ({ children }) => {
-  // Modal states for Bespoke / Custom Orders and Quick View
+  // Modal states for Bespoke / Custom Orders, Quick View, and Direct Order Flow
   const [isCustomOrderOpen, setIsCustomOrderOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
+  const [orderNowProduct, setOrderNowProduct] = useState(null);
+  const [orderNowQuantity, setOrderNowQuantity] = useState(1);
+
+  const openOrderModal = (product, quantity = 1) => {
+    setOrderNowProduct(product);
+    setOrderNowQuantity(quantity || 1);
+  };
+
+  const closeOrderModal = () => {
+    setOrderNowProduct(null);
+    setOrderNowQuantity(1);
+  };
 
   // Inert fallbacks for removed cart & wishlist
   const cart = [];
@@ -43,7 +55,13 @@ export const CartWishlistProvider = ({ children }) => {
         isCustomOrderOpen,
         setIsCustomOrderOpen,
         quickViewProduct,
-        setQuickViewProduct
+        setQuickViewProduct,
+        orderNowProduct,
+        setOrderNowProduct,
+        orderNowQuantity,
+        setOrderNowQuantity,
+        openOrderModal,
+        closeOrderModal
       }}
     >
       {children}

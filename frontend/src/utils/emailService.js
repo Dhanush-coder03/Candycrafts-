@@ -80,35 +80,36 @@ Candy Crafts Atelier Team`;
 };
 
 export const generateOwnerWhatsAppUrl = (order, phone = '+91 6382091475') => {
-  let cleanPhone = (phone || '6382091475').replace(/[^0-9]/g, '');
+  let cleanPhone = String(phone || '6382091475').replace(/[^0-9]/g, '');
   if (cleanPhone.length === 10) {
     cleanPhone = '91' + cleanPhone;
   }
   if (!cleanPhone) cleanPhone = '916382091475';
 
+  const currentOrigin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+
   const itemsText = (order.items || [])
-    .map(i => `• ${i.name} (Qty: ${i.quantity}) - Rs. ${(i.price * i.quantity).toLocaleString('en-IN')}`)
+    .map(i => `• *${i.name}* (Qty: ${i.quantity}) - Rs. ${(i.price * i.quantity).toLocaleString('en-IN')}${i.id && currentOrigin ? `\n  🔗 ${currentOrigin}/product/${i.id}` : ''}`)
     .join('\n');
 
-  const text = `🌸 *CANDY CRAFTS - NEW ORDER QUERY* 🌸
+  const text = `🌸 *CANDY CRAFTS - NEW ORDER* 🌸
 
-• *Order ID:* #${order.id}
+• *Order Reference:* #${order.id}
 • *Date:* ${new Date(order.createdAt || Date.now()).toLocaleDateString('en-IN')}
 
 👤 *CUSTOMER DETAILS:*
 • *Name:* ${order.customerName}
 • *Phone:* ${order.customerPhone}
-• *Gmail / Email:* ${order.customerEmail}
-• *Delivery Address:*
-${order.shippingAddress || 'To be confirmed on call'}
-${order.notes ? `• *Special Note:* "${order.notes}"\n` : ''}
-📦 *ORDERED ITEMS:*
+📍 *Delivery Address:*
+${order.shippingAddress || 'Not specified'}
+${order.customerEmail ? `• *Email:* ${order.customerEmail}\n` : ''}${order.notes ? `📝 *Special Request:* "${order.notes}"\n` : ''}
+📦 *ORDERED ITEM(S):*
 ${itemsText}
 
 💰 *TOTAL AMOUNT:* Rs. ${(order.totalAmount || 0).toLocaleString('en-IN')}
 🎁 *Packaging:* Complimentary Handcrafted Box
 
-Action: Please contact customer at ${order.customerPhone} or ${order.customerEmail} to confirm custom crafting schedule and dispatch.`;
+Hello Candy Crafts! I have submitted my order details on your website. Please confirm availability and let me know the payment options. Thank you!`;
 
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
 };

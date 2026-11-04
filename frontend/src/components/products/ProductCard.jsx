@@ -7,7 +7,7 @@ import { formatPrice } from '../../utils/formatters';
 import { generateDirectProductWhatsAppUrl } from '../../utils/emailService';
 
 export const ProductCard = ({ product }) => {
-  const { setQuickViewProduct } = useCartWishlist();
+  const { setQuickViewProduct, openOrderModal } = useCartWishlist();
   const { contactInfo } = useProducts();
 
   if (!product) return null;
@@ -61,8 +61,7 @@ export const ProductCard = ({ product }) => {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              const waUrl = generateDirectProductWhatsAppUrl(product, 1, targetWhatsApp);
-              window.open(waUrl, '_blank');
+              openOrderModal(product, 1);
             }}
             className="flex-1 py-2 px-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold shadow-soft flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
             title="Order now on WhatsApp"
@@ -122,11 +121,10 @@ export const ProductCard = ({ product }) => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const waUrl = generateDirectProductWhatsAppUrl(product, 1, targetWhatsApp);
-                window.open(waUrl, '_blank');
+                openOrderModal(product, 1);
               }}
               className="py-1.5 px-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
-              title="Order directly on WhatsApp (+91 63820 91475)"
+              title="Order now (Name, Phone & Address)"
             >
               <MessageCircle className="w-3.5 h-3.5 fill-white/20" />
               <span>Order Now</span>

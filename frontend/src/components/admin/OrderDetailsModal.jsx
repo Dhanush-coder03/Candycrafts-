@@ -106,23 +106,32 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
                 </div>
               </div>
 
-              {/* Gmail */}
+              {/* Gmail / Contact Method */}
               <div className="space-y-1 sm:col-span-2">
-                <span className="text-xs text-walnut-400 block font-medium">Customer Gmail / Email</span>
+                <span className="text-xs text-walnut-400 block font-medium">Customer Email / Contact</span>
                 <div className="flex items-center gap-2">
-                  <a
-                    href={`mailto:${order.customerEmail}?subject=${encodeURIComponent(`Candy Crafts Order #${order.id} Update`)}`}
-                    className="text-sm font-semibold text-terracotta-600 hover:underline flex items-center gap-1.5"
-                  >
-                    <Mail className="w-4 h-4 text-terracotta-500" />
-                    <span>{order.customerEmail}</span>
-                  </a>
-                  <a
-                    href={`mailto:${order.customerEmail}?subject=${encodeURIComponent(`Candy Crafts Order #${order.id} Update`)}`}
-                    className="px-2.5 py-1 rounded-full bg-cream-200 hover:bg-cream-300 text-walnut-800 text-[10px] font-semibold transition"
-                  >
-                    Send Gmail Reply
-                  </a>
+                  {order.customerEmail ? (
+                    <>
+                      <a
+                        href={`mailto:${order.customerEmail}?subject=${encodeURIComponent(`Candy Crafts Order #${order.id} Update`)}`}
+                        className="text-sm font-semibold text-terracotta-600 hover:underline flex items-center gap-1.5"
+                      >
+                        <Mail className="w-4 h-4 text-terracotta-500" />
+                        <span>{order.customerEmail}</span>
+                      </a>
+                      <a
+                        href={`mailto:${order.customerEmail}?subject=${encodeURIComponent(`Candy Crafts Order #${order.id} Update`)}`}
+                        className="px-2.5 py-1 rounded-full bg-cream-200 hover:bg-cream-300 text-walnut-800 text-[10px] font-semibold transition"
+                      >
+                        Send Gmail Reply
+                      </a>
+                    </>
+                  ) : (
+                    <span className="text-xs text-walnut-500 italic flex items-center gap-1">
+                      <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      Direct WhatsApp Order (No email required)
+                    </span>
+                  )}
                 </div>
               </div>
 

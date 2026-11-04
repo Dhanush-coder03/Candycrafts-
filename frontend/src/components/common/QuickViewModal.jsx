@@ -148,16 +148,13 @@ export const QuickViewModal = () => {
               </div>
             </div>
 
-            {/* Direct WhatsApp Order */}
+            {/* Order Now Button */}
             <button
-              onClick={() => {
-                const waUrl = generateDirectProductWhatsAppUrl(product, quantity, targetWhatsApp);
-                window.open(waUrl, '_blank');
-              }}
+              onClick={() => setIsOrderModalOpen(true)}
               className="w-full py-3.5 px-6 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-soft transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
             >
               <MessageCircle className="w-4 h-4 fill-white/20" />
-              <span>Order Now on WhatsApp</span>
+              <span>Order Now ({formatPrice(product.price * quantity)})</span>
             </button>
 
             <Link
@@ -168,16 +165,6 @@ export const QuickViewModal = () => {
               <span>View Full Craft Specifications</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
-
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setIsOrderModalOpen(true)}
-                className="text-[11px] text-walnut-400 hover:text-walnut-600 underline transition cursor-pointer"
-              >
-                Prefer email enquiry form?
-              </button>
-            </div>
           </div>
 
         </div>
@@ -191,7 +178,7 @@ export const QuickViewModal = () => {
           setIsOrderModalOpen(false);
           setQuickViewProduct(null);
         }}
-        initialQuantity={1}
+        initialQuantity={quantity}
       />
     </div>
   );

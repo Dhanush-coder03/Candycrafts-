@@ -221,10 +221,17 @@ export const AdminOrdersPage = () => {
                         <div className="font-semibold text-walnut-900 group-hover:text-terracotta-600 transition">
                           {order.customerName}
                         </div>
-                        <div className="text-xs text-walnut-500 flex items-center gap-1 mt-0.5">
-                          <Mail className="w-3 h-3 text-terracotta-400 shrink-0" />
-                          <span className="truncate max-w-[180px]">{order.customerEmail}</span>
-                        </div>
+                        {order.customerEmail ? (
+                          <div className="text-xs text-walnut-500 flex items-center gap-1 mt-0.5">
+                            <Mail className="w-3 h-3 text-terracotta-400 shrink-0" />
+                            <span className="truncate max-w-[180px]">{order.customerEmail}</span>
+                          </div>
+                        ) : order.shippingAddress ? (
+                          <div className="text-xs text-walnut-500 flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-3 h-3 text-terracotta-400 shrink-0" />
+                            <span className="truncate max-w-[180px]">{order.shippingAddress}</span>
+                          </div>
+                        ) : null}
                       </td>
 
                       {/* Phone Number */}

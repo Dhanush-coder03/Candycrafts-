@@ -16,10 +16,10 @@ const connectDB = async () => {
   }
   lastAttempt = now;
 
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.MONGODB_URI || 'mongodb+srv://dhanusjd_db_user:FyjKRuBgHmkJ2l24@cluster0.etfq3an.mongodb.net/candycrafts?retryWrites=true&w=majority&appName=Cluster0';
 
   if (!uri) {
-    console.warn('⚠️ Warning: MONGODB_URI is not defined in backend/.env');
+    console.warn('⚠️ Warning: MONGODB_URI is not defined');
     return;
   }
 

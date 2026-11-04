@@ -4,12 +4,12 @@
  * with graceful fallback to client-side storage when offline.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
 
 /**
  * Helper to make API requests with timeout
  */
-async function apiRequest(endpoint, options = {}, timeoutMs = 4000) {
+async function apiRequest(endpoint, options = {}, timeoutMs = 8000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -19,9 +19,6 @@ async function apiRequest(endpoint, options = {}, timeoutMs = 4000) {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
         ...(options.headers || {})
       },
       signal: controller.signal

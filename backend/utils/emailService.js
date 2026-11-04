@@ -238,31 +238,6 @@ ${itemsListPlain}
 Delivery Address:
 ${order.shippingAddress || 'To be confirmed on call'}
 
-We will contact you via WhatsApp / Phone to confirm payment and dispatch schedule.
-
-Warm regards,
-${brandName} Artisan Team`,
-        html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #faf7f2; border-radius: 16px; overflow: hidden; border: 1px solid #e8dfd8;">
-            <div style="background: #c86d51; padding: 28px 24px; text-align: center; color: #ffffff;">
-              <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9;">Artisan Studio Confirmation</span>
-              <h1 style="margin: 8px 0 0; font-size: 24px; font-weight: 700;">We've Received Your Order!</h1>
-              <p style="margin: 6px 0 0; font-size: 13px; opacity: 0.95;">Order Reference: #${order.id}</p>
-            </div>
-            <div style="padding: 24px; background: #ffffff;">
-              <p style="font-size: 15px; color: #2b2623; margin: 0 0 16px;">Dear <strong>${order.customerName}</strong>,</p>
-              <p style="font-size: 14px; color: #665b53; line-height: 1.6; margin: 0 0 20px;">
-                Thank you for choosing <strong>${brandName}</strong>! Our studio team will reach out to you on <strong>${order.customerPhone}</strong> shortly.
-              </p>
-            </div>
-          </div>
-        `
-      });
-    }
-
-Delivery Address:
-${order.shippingAddress || 'To be confirmed on call'}
-
 If you have any questions or wish to customize your order, simply reply directly to this email or reach us at ${studioPhone}.
 
 Warm regards,
@@ -270,7 +245,7 @@ ${brandName} Artisan Atelier
 ${studioAddress}
 Phone: ${studioPhone}
 Instagram: ${instagramUrl}`,
-      html: `
+        html: `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -357,7 +332,8 @@ Instagram: ${instagramUrl}`,
         </body>
         </html>
       `
-    });
+      });
+    }
 
     console.log(`✉️ Order notification emails successfully sent for #${order.id} via ${ownerEmail}`);
   } catch (error) {

@@ -35,10 +35,22 @@ exports.createOrder = async (req, res) => {
   try {
     const orderData = req.body;
 
+    // Ensure a unique order ID
+    const year = new Date().getFullYear();
     if (!orderData.id) {
-      const year = new Date().getFullYear();
       const randomNum = Math.floor(1000 + Math.random() * 9000);
       orderData.id = `ORD-${year}-${randomNum}`;
+    }
+
+    // Check if ID already exists to prevent duplicate key error
+    const existing = await Order.findOne({ id: orderData.id });
+    if (existing) {
+      orderData.id = `ORD-${year}-${Date.now().toString().slice(-4)}${Math.floor(100 + Math.random() * 900)}`;
+    }
+
+    // Set fallback shipping address if missing
+    if (!orderData.shippingAddress || !orderData.shippingAddress.trim()) {
+      orderData.shippingAddress = 'Direct WhatsApp Order - Address to be confirmed';
     }
 
     const newOrder = await Order.create(orderData);
@@ -65,6 +77,7 @@ exports.createOrder = async (req, res) => {
       whatsapp: whatsappResult
     });
   } catch (error) {
+    console.error('Create order error:', error);
     res.status(400).json({ success: false, message: error.message });
   }
 };

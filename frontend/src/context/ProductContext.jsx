@@ -91,13 +91,13 @@ const INITIAL_ORDERS = [
 const ProductContext = createContext(null);
 
 export const ProductProvider = ({ children }) => {
-  // In-memory state initialization (No localStorage / No caching as requested)
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
-  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
-  const [contactInfo, setContactInfo] = useState(DEFAULT_CONTACT_INFO);
-  const [inquiries, setInquiries] = useState(INITIAL_INQUIRIES);
-  const [orders, setOrders] = useState(INITIAL_ORDERS);
-  const [reviews, setReviews] = useState([]);
+  // Dual-layer state initialization (Persistent localStorage + Live MongoDB sync)
+  const [products, setProducts] = useState(() => getFromStorage(STORAGE_KEYS.PRODUCTS, INITIAL_PRODUCTS));
+  const [categories, setCategories] = useState(() => getFromStorage(STORAGE_KEYS.CATEGORIES, INITIAL_CATEGORIES));
+  const [contactInfo, setContactInfo] = useState(() => getFromStorage(STORAGE_KEYS.CONTACT_INFO, DEFAULT_CONTACT_INFO));
+  const [inquiries, setInquiries] = useState(() => getFromStorage(STORAGE_KEYS.INQUIRIES, INITIAL_INQUIRIES));
+  const [orders, setOrders] = useState(() => getFromStorage(STORAGE_KEYS.ORDERS, INITIAL_ORDERS));
+  const [reviews, setReviews] = useState(() => getFromStorage(STORAGE_KEYS.REVIEWS, []));
 
   // Toast state
   const [toast, setToast] = useState(null);
@@ -113,43 +113,75 @@ export const ProductProvider = ({ children }) => {
   // Backend API and Database Connection Status
   const [serverStatus, setServerStatus] = useState({ online: false, dbConnected: false, checked: false });
 
-  // Probe backend server & sync from MongoDB when online
+  // Dedicated function to fetch freshest orders directly from MongoDB Atlas
+  const refreshOrders = async () => {
+    try {
+      const r = await api.getOrders();
+      if (r?.data && Array.isArray(r.data)) {
+        setOrders(prev => {
+          const serverIds = new Set(r.data.map(o => o.id));
+          const localPending = prev.filter(o => !serverIds.has(o.id));
+          const merged = [...r.data, ...localPending];
+          saveToStorage(STORAGE_KEYS.ORDERS, merged);
+          return merged;
+        });
+        return { success: true, count: r.data.length };
+      }
+    } catch (err) {
+      console.warn('Could not sync orders from server:', err.message);
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Probe backend server & sync from MongoDB
   useEffect(() => {
     let isMounted = true;
 
+    // 1. Immediately attempt to fetch orders and products regardless of health probe
+    refreshOrders();
+
+    api.getProducts().then(r => {
+      if (isMounted && r?.data && r.data.length > 0) {
+        setProducts(r.data);
+        saveToStorage(STORAGE_KEYS.PRODUCTS, r.data);
+      }
+    }).catch(() => {});
+
+    api.getCategories().then(r => {
+      if (isMounted && r?.data && r.data.length > 0) {
+        setCategories(r.data);
+        saveToStorage(STORAGE_KEYS.CATEGORIES, r.data);
+      }
+    }).catch(() => {});
+
+    api.getInquiries().then(r => {
+      if (isMounted && r?.data && r.data.length > 0) {
+        setInquiries(r.data);
+        saveToStorage(STORAGE_KEYS.INQUIRIES, r.data);
+      }
+    }).catch(() => {});
+
+    api.getContactInfo().then(r => {
+      if (isMounted && r?.data) {
+        setContactInfo(r.data);
+        saveToStorage(STORAGE_KEYS.CONTACT_INFO, r.data);
+      }
+    }).catch(() => {});
+
+    api.getReviews().then(r => {
+      if (isMounted && r?.data && Array.isArray(r.data)) {
+        setReviews(r.data);
+        saveToStorage(STORAGE_KEYS.REVIEWS, r.data);
+      }
+    }).catch(() => {});
+
+    // 2. Run server health check
     api.checkHealth()
       .then(res => {
         if (!isMounted) return;
         const isOnline = res.online;
         const dbConnected = res.data?.dbState === 'connected';
         setServerStatus({ online: isOnline, dbConnected, checked: true });
-
-        if (isOnline && dbConnected) {
-          // Sync live data from MongoDB
-          api.getProducts().then(r => {
-            if (r?.data && r.data.length > 0) setProducts(r.data);
-          }).catch(() => {});
-
-          api.getCategories().then(r => {
-            if (r?.data && r.data.length > 0) setCategories(r.data);
-          }).catch(() => {});
-
-          api.getOrders().then(r => {
-            if (r?.data && r.data.length > 0) setOrders(r.data);
-          }).catch(() => {});
-
-          api.getInquiries().then(r => {
-            if (r?.data && r.data.length > 0) setInquiries(r.data);
-          }).catch(() => {});
-
-          api.getContactInfo().then(r => {
-            if (r?.data) setContactInfo(r.data);
-          }).catch(() => {});
-
-          api.getReviews().then(r => {
-            if (r?.data && Array.isArray(r.data)) setReviews(r.data);
-          }).catch(() => {});
-        }
       })
       .catch(() => {
         if (isMounted) setServerStatus({ online: false, dbConnected: false, checked: true });
@@ -452,17 +484,31 @@ export const ProductProvider = ({ children }) => {
       items: orderData.items || [],
       totalAmount: orderData.totalAmount || 0,
       status: 'Pending',
-      type: orderData.type || 'Order Query',
+      type: orderData.type || 'WhatsApp Direct Order',
       createdAt: new Date().toISOString()
     };
-    setOrders(prev => [newOrder, ...prev]);
+
+    // Immediately update in-memory state & persist to localStorage so Admin sees it without delay
+    setOrders(prev => {
+      const updated = [newOrder, ...prev.filter(o => o.id !== newOrder.id)];
+      saveToStorage(STORAGE_KEYS.ORDERS, updated);
+      return updated;
+    });
+
     showToast(`Order #${newOrder.id} received! Check Admin Panel.`, 'success');
 
-    // Async sync to MongoDB & triggers both Nodemailer Email + WhatsApp dispatch
+    // Async sync to MongoDB Atlas & trigger WhatsApp dispatch
     try {
       const res = await api.createOrder(newOrder);
-      if (res?.whatsapp) {
-        newOrder.whatsapp = res.whatsapp;
+      if (res?.data) {
+        const savedOrder = { ...newOrder, ...res.data };
+        if (res.whatsapp) savedOrder.whatsapp = res.whatsapp;
+        setOrders(prev => {
+          const updated = prev.map(o => (o.id === newOrder.id ? savedOrder : o));
+          saveToStorage(STORAGE_KEYS.ORDERS, updated);
+          return updated;
+        });
+        return savedOrder;
       }
     } catch (err) {
       console.warn('Backend sync notice (Order):', err.message);
@@ -472,11 +518,13 @@ export const ProductProvider = ({ children }) => {
   };
 
   const updateOrderStatus = (orderId, newStatus) => {
-    setOrders(prev =>
-      prev.map(order =>
+    setOrders(prev => {
+      const updated = prev.map(order =>
         order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
+      );
+      saveToStorage(STORAGE_KEYS.ORDERS, updated);
+      return updated;
+    });
     showToast(`Order #${orderId} marked as ${newStatus}`, 'info');
 
     api.updateOrderStatus(orderId, newStatus).catch(err => {
@@ -485,7 +533,11 @@ export const ProductProvider = ({ children }) => {
   };
 
   const deleteOrder = (orderId) => {
-    setOrders(prev => prev.filter(order => order.id !== orderId));
+    setOrders(prev => {
+      const updated = prev.filter(order => order.id !== orderId);
+      saveToStorage(STORAGE_KEYS.ORDERS, updated);
+      return updated;
+    });
     showToast(`Order #${orderId} removed from records.`, 'info');
 
     api.deleteOrder(orderId).catch(err => {
@@ -523,6 +575,7 @@ export const ProductProvider = ({ children }) => {
         placeOrder,
         updateOrderStatus,
         deleteOrder,
+        refreshOrders,
         notifyOrderWhatsApp: (id) => api.notifyOrderWhatsApp(id),
         reviews,
         addReview,

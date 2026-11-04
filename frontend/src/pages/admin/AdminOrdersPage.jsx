@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShoppingBag, 
   Search, 
@@ -17,7 +17,9 @@ import {
   MessageCircle, 
   Sparkles,
   ExternalLink,
-  ChevronDown
+  ChevronDown,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { formatPrice, formatDate } from '../../utils/formatters';
@@ -32,11 +34,27 @@ const STATUS_COLORS = {
 };
 
 export const AdminOrdersPage = () => {
-  const { orders = [], updateOrderStatus, deleteOrder, contactInfo } = useProducts();
+  const { orders = [], updateOrderStatus, deleteOrder, contactInfo, refreshOrders, serverStatus } = useProducts();
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Auto-sync fresh orders from MongoDB on mount
+  useEffect(() => {
+    if (refreshOrders) {
+      refreshOrders();
+    }
+  }, []);
+
+  const handleManualSync = async () => {
+    setIsRefreshing(true);
+    if (refreshOrders) {
+      await refreshOrders();
+    }
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
 
   const ownerEmail = contactInfo?.ownerEmail || contactInfo?.email || 'candycraftssstudio@gmail.com';
 
@@ -151,21 +169,34 @@ export const AdminOrdersPage = () => {
           )}
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-          {['ALL', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition whitespace-nowrap ${
-                statusFilter === status
-                  ? 'bg-terracotta-500 text-white shadow-xs'
-                  : 'bg-cream-100 text-walnut-600 hover:bg-cream-200'
-              }`}
-            >
-              {status === 'ALL' ? 'All Orders' : status}
-            </button>
-          ))}
+        {/* Filter Pills & Live Sync Button */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+          <div className="flex items-center gap-1.5">
+            {['ALL', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition whitespace-nowrap ${
+                  statusFilter === status
+                    ? 'bg-terracotta-500 text-white shadow-xs'
+                    : 'bg-cream-100 text-walnut-600 hover:bg-cream-200'
+                }`}
+              >
+                {status === 'ALL' ? 'All Orders' : status}
+              </button>
+            ))}
+          </div>
+
+          {/* Sync from Database Button */}
+          <button
+            onClick={handleManualSync}
+            disabled={isRefreshing}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-cream-300 bg-cream-50 hover:bg-cream-100 text-walnut-700 transition shrink-0 ml-auto"
+            title="Fetch latest orders from MongoDB Atlas"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-terracotta-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Syncing...' : 'Sync Orders'}</span>
+          </button>
         </div>
       </div>
 

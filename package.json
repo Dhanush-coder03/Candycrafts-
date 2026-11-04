@@ -1,0 +1,22 @@
+{
+  "name": "candycraft-atelier",
+  "version": "1.0.0",
+  "description": "Candy Crafts Atelier - Handmade crafts boutique with Node.js & MongoDB backend and Vite React frontend",
+  "scripts": {
+    "dev:backend": "node backend/server.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev": "node -e \"const { spawn } = require('child_process'); spawn('node', ['backend/server.js'], { stdio: 'inherit' }); spawn('npm', ['--prefix', 'frontend', 'run', 'dev'], { stdio: 'inherit', shell: true });\"",
+    "start": "node backend/server.js",
+    "build": "npm --prefix frontend run build"
+  },
+  "keywords": [
+    "candycrafts",
+    "handmade",
+    "crafts",
+    "ecommerce",
+    "react",
+    "mongodb"
+  ],
+  "author": "Candy Crafts",
+  "license": "ISC"
+}

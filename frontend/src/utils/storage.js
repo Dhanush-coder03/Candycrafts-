@@ -1,19 +1,7 @@
 /**
- * In-memory storage wrapper (No localStorage / No caching as requested)
- * All persistence is handled directly via live server / MongoDB API.
+ * Candy Crafts Dual-Layer Storage Utility
+ * Provides persistent local fallback and syncing with live server / MongoDB API.
  */
-
-// Purge any stale cache or localStorage keys from previous sessions
-try {
-  if (typeof window !== 'undefined' && window.localStorage) {
-    window.localStorage.clear();
-  }
-  if (typeof window !== 'undefined' && window.sessionStorage) {
-    window.sessionStorage.clear();
-  }
-} catch (e) {
-  // safe fallback
-}
 
 export const STORAGE_KEYS = {
   PRODUCTS: 'craft_products',
@@ -27,20 +15,50 @@ export const STORAGE_KEYS = {
 };
 
 /**
- * Does NOT read from localStorage to avoid caching stale data.
- * Always returns fallback so state is loaded fresh from catalog or backend API.
+ * Read from localStorage with error safety and fallback
  */
-export const getFromStorage = (_key, fallback = null) => {
-  return fallback;
+export const getFromStorage = (key, fallback = null) => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return fallback;
+  }
+  try {
+    const item = window.localStorage.getItem(key);
+    if (item === null || item === undefined) return fallback;
+    return JSON.parse(item);
+  } catch (err) {
+    console.warn(`Error reading ${key} from storage:`, err);
+    return fallback;
+  }
 };
 
 /**
- * Does NOT store in localStorage or browser cache.
+ * Save data to localStorage with error safety
  */
-export const saveToStorage = (_key, _data) => {
-  return true;
+export const saveToStorage = (key, data) => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return false;
+  }
+  try {
+    window.localStorage.setItem(key, JSON.stringify(data));
+    return true;
+  } catch (err) {
+    console.warn(`Error saving ${key} to storage:`, err);
+    return false;
+  }
 };
 
-export const removeFromStorage = (_key) => {
-  return true;
+/**
+ * Remove an item from localStorage
+ */
+export const removeFromStorage = (key) => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return false;
+  }
+  try {
+    window.localStorage.removeItem(key);
+    return true;
+  } catch (err) {
+    console.warn(`Error removing ${key} from storage:`, err);
+    return false;
+  }
 };

@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { X, ShoppingBag, Star, Check, Sparkles, ArrowRight } from 'lucide-react';
+import { X, ShoppingBag, Star, Check, Sparkles, ArrowRight, MessageCircle } from 'lucide-react';
 import { useCartWishlist } from '../../context/CartWishlistContext';
+import { useProducts } from '../../context/ProductContext';
 import { formatPrice } from '../../utils/formatters';
+import { generateDirectProductWhatsAppUrl } from '../../utils/emailService';
 import { ProductOrderModal } from '../products/ProductOrderModal';
 
 export const QuickViewModal = () => {
   const { quickViewProduct, setQuickViewProduct } = useCartWishlist();
+  const { contactInfo } = useProducts();
   const [selectedImgIndex, setSelectedImgIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
   if (!quickViewProduct) return null;
 
   const product = quickViewProduct;
   const images = product.images && product.images.length > 0 ? product.images : [product.image];
+  const targetWhatsApp = contactInfo?.whatsappNumber || contactInfo?.phone || '6382091475';
 
 
   return (
@@ -114,12 +119,45 @@ export const QuickViewModal = () => {
           </div>
 
           <div className="space-y-3 pt-4 border-t border-cream-200">
+            {/* Quantity Selector */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-walnut-700">Quantity:</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center border border-cream-300 rounded-full px-2 py-0.5 bg-white shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-5 h-5 flex items-center justify-center text-walnut-600 hover:text-walnut-950 font-bold text-xs"
+                  >
+                    -
+                  </button>
+                  <span className="px-2.5 text-xs font-bold text-walnut-900">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-5 h-5 flex items-center justify-center text-walnut-600 hover:text-walnut-950 font-bold text-xs"
+                  >
+                    +
+                  </button>
+                </div>
+                {quantity > 1 && (
+                  <span className="text-xs font-bold text-terracotta-600">
+                    {formatPrice(product.price * quantity)}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Direct WhatsApp Order */}
             <button
-              onClick={() => setIsOrderModalOpen(true)}
-              className="w-full py-3.5 px-6 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-semibold text-sm shadow-soft transition active:scale-95 flex items-center justify-center gap-2"
+              onClick={() => {
+                const waUrl = generateDirectProductWhatsAppUrl(product, quantity, targetWhatsApp);
+                window.open(waUrl, '_blank');
+              }}
+              className="w-full py-3.5 px-6 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-soft transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <ShoppingBag className="w-4 h-4" />
-              <span>Order Query / Buy Now</span>
+              <MessageCircle className="w-4 h-4 fill-white/20" />
+              <span>Order Now on WhatsApp</span>
             </button>
 
             <Link
@@ -130,6 +168,16 @@ export const QuickViewModal = () => {
               <span>View Full Craft Specifications</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setIsOrderModalOpen(true)}
+                className="text-[11px] text-walnut-400 hover:text-walnut-600 underline transition cursor-pointer"
+              >
+                Prefer email enquiry form?
+              </button>
+            </div>
           </div>
 
         </div>

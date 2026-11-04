@@ -19,7 +19,8 @@ import {
   generateOwnerOrderEmail, 
   generateCustomerConfirmationEmail, 
   generateOwnerWhatsAppUrl,
-  generateCustomerWhatsAppUrl 
+  generateCustomerWhatsAppUrl,
+  generateDirectProductWhatsAppUrl
 } from '../../utils/emailService';
 
 export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 1 }) => {
@@ -76,7 +77,7 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
 
       // Auto-route order to WhatsApp so owner receives order notification directly
       try {
-        const ownerPhone = contactInfo?.phone || '+91 98765 43210';
+        const ownerPhone = contactInfo?.whatsappNumber || contactInfo?.phone || '+91 6382091475';
         const ownerWhatsAppUrl = generateOwnerWhatsAppUrl(newOrder, ownerPhone);
         window.open(ownerWhatsAppUrl, '_blank');
       } catch (waErr) {
@@ -322,6 +323,41 @@ export const ProductOrderModal = ({ product, isOpen, onClose, initialQuantity = 
                     +
                   </button>
                 </div>
+              </div>
+
+              {/* Direct Instant WhatsApp Order Action */}
+              <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                    <MessageCircle className="w-4 h-4 text-emerald-600" />
+                    Instant WhatsApp Order:
+                  </span>
+                  <span className="text-[11px] font-semibold text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
+                    Fastest
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const waUrl = generateDirectProductWhatsAppUrl(
+                      product, 
+                      quantity, 
+                      contactInfo?.whatsappNumber || contactInfo?.phone || '+91 6382091475'
+                    );
+                    window.open(waUrl, '_blank');
+                    onClose();
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-soft transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4 fill-white/20" />
+                  <span>Order Directly via WhatsApp (+91 63820 91475)</span>
+                </button>
+              </div>
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-cream-200"></div>
+                <span className="flex-shrink mx-3 text-[11px] font-medium text-walnut-400">or submit email enquiry below</span>
+                <div className="flex-grow border-t border-cream-200"></div>
               </div>
 
               {/* Customer Inputs */}

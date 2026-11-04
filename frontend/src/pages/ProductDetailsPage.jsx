@@ -10,23 +10,28 @@ import {
   Box, 
   ArrowLeft, 
   ChevronRight,
-  Share2
+  Share2,
+  MessageCircle
 } from 'lucide-react';
 import { useProducts } from '../context/ProductContext';
 import { ProductCard } from '../components/products/ProductCard';
 import { ProductOrderModal } from '../components/products/ProductOrderModal';
 import { ProductReviewsSection } from '../components/products/ProductReviewsSection';
 import { formatPrice } from '../utils/formatters';
+import { generateDirectProductWhatsAppUrl } from '../utils/emailService';
 
 export const ProductDetailsPage = () => {
   const { id } = useParams();
-  const { products, getProductById, showToast } = useProducts();
+  const { products, getProductById, showToast, contactInfo } = useProducts();
 
   const product = getProductById(id);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('description');
+  const [quantity, setQuantity] = useState(1);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+
+  const targetWhatsApp = contactInfo?.whatsappNumber || contactInfo?.phone || '6382091475';
 
   // Scroll to top when product changes
   useEffect(() => {
@@ -206,18 +211,65 @@ export const ProductDetailsPage = () => {
             </div>
           </div>
 
-          {/* Main Action: Order Query / Buy Now */}
-          <div className="pt-2 space-y-2">
+          {/* Main Action: Direct WhatsApp Order */}
+          <div className="pt-2 space-y-3">
+            {/* Quantity Selector */}
+            <div className="flex items-center justify-between p-3 bg-cream-50 rounded-2xl border border-cream-200">
+              <span className="text-xs font-semibold text-walnut-700 uppercase tracking-wider">
+                Select Quantity:
+              </span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center border border-cream-300 rounded-full px-2.5 py-1 bg-white shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-6 h-6 flex items-center justify-center text-walnut-600 hover:text-walnut-950 font-bold text-sm hover:bg-cream-100 rounded-full transition"
+                    aria-label="Decrease quantity"
+                  >
+                    -
+                  </button>
+                  <span className="px-3 text-sm font-bold text-walnut-900">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-6 h-6 flex items-center justify-center text-walnut-600 hover:text-walnut-950 font-bold text-sm hover:bg-cream-100 rounded-full transition"
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="text-xs font-bold text-terracotta-600 min-w-[70px] text-right">
+                  {formatPrice(product.price * quantity)}
+                </span>
+              </div>
+            </div>
+
+            {/* Direct WhatsApp Order Button */}
             <button
-              onClick={() => setIsOrderModalOpen(true)}
-              className="w-full py-4 px-8 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-semibold text-base shadow-soft hover:shadow-soft-md transition active:scale-[0.98] flex items-center justify-center gap-2.5"
+              onClick={() => {
+                const waUrl = generateDirectProductWhatsAppUrl(product, quantity, targetWhatsApp);
+                window.open(waUrl, '_blank');
+              }}
+              className="w-full py-4 px-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-base shadow-soft hover:shadow-soft-md transition active:scale-[0.98] flex items-center justify-center gap-2.5 group cursor-pointer"
             >
-              <ShoppingBag className="w-5 h-5" />
-              <span>Order Query / Buy Now</span>
+              <MessageCircle className="w-5 h-5 fill-white/20 text-white group-hover:scale-110 transition-transform" />
+              <span>Order Now on WhatsApp</span>
             </button>
+
             <p className="text-center text-xs text-walnut-500">
-              Direct artisan enquiry & fast response from Candy Crafts studio
+              Direct WhatsApp order to <strong className="text-walnut-700 font-semibold">+91 63820 91475</strong> with product details
             </p>
+
+            {/* Email inquiry option (paused as primary, kept as secondary alternative) */}
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => setIsOrderModalOpen(true)}
+                className="text-[11px] text-walnut-400 hover:text-walnut-600 underline transition cursor-pointer"
+              >
+                Prefer email enquiry form instead?
+              </button>
+            </div>
           </div>
 
           {/* Guarantees List */}

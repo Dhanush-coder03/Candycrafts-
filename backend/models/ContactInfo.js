@@ -27,7 +27,7 @@ const contactInfoSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    default: '+91 98765 43210'
+    default: '+91 6382091475'
   },
   hours: {
     type: String,
@@ -44,7 +44,7 @@ const contactInfoSchema = new mongoose.Schema({
   // WhatsApp Automated Messaging Settings
   whatsappNumber: {
     type: String,
-    default: '+91 98765 43210'
+    default: '+91 6382091475'
   },
   whatsappToken: {
     type: String,

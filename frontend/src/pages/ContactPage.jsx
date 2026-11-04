@@ -111,7 +111,7 @@ export const ContactPage = () => {
                 <div>
                   <span className="font-semibold block text-walnut-900">Concierge Phone / WhatsApp</span>
                   <a href={`tel:${contactInfo.phone?.replace(/[^0-9+]/g, '')}`} className="text-walnut-600 hover:text-terracotta-600 text-xs transition">
-                    {contactInfo.phone || '+91 98765 43210'}
+                    {contactInfo.phone || '+91 6382091475'}
                   </a>
                 </div>
               </div>
@@ -293,7 +293,7 @@ export const ContactPage = () => {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+91 98765 43210"
+                    placeholder="+91 6382091475"
                     className="w-full px-4 py-2.5 rounded-xl border border-cream-300 text-sm focus:outline-none focus:border-terracotta-500"
                   />
                 </div>

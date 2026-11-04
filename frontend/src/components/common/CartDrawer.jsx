@@ -25,7 +25,8 @@ import {
   generateOwnerOrderEmail, 
   generateCustomerConfirmationEmail, 
   generateOwnerWhatsAppUrl,
-  generateCustomerWhatsAppUrl 
+  generateCustomerWhatsAppUrl,
+  generateCartWhatsAppUrl
 } from '../../utils/emailService';
 
 export const CartDrawer = () => {
@@ -508,11 +509,26 @@ export const CartDrawer = () => {
               </div>
 
               <button
-                onClick={() => setIsCheckingOut(true)}
-                className="w-full py-3.5 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white font-medium text-sm shadow-soft flex items-center justify-center gap-2 transition active:scale-95"
+                onClick={() => {
+                  const waUrl = generateCartWhatsAppUrl(
+                    cart, 
+                    cartSubtotal, 
+                    contactInfo?.whatsappNumber || contactInfo?.phone || '6382091475'
+                  );
+                  window.open(waUrl, '_blank');
+                }}
+                className="w-full py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-soft flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
               >
-                <span>Proceed to Checkout</span>
-                <ArrowRight className="w-4 h-4" />
+                <MessageCircle className="w-4 h-4 fill-white/20" />
+                <span>Order Now on WhatsApp ({formatPrice(cartSubtotal)})</span>
+              </button>
+
+              <button
+                onClick={() => setIsCheckingOut(true)}
+                className="w-full py-2.5 rounded-full bg-cream-100 hover:bg-cream-200 text-walnut-700 font-medium text-xs flex items-center justify-center gap-1.5 transition"
+              >
+                <span>Or Enter Delivery Address Form</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
 
               <div className="flex items-center justify-center gap-2 text-[11px] text-walnut-500 pt-1">

@@ -9,7 +9,7 @@ export const Footer = () => {
   const brandName = contactInfo?.brandName || 'Candy Crafts';
   const address = contactInfo?.address || 'Craft Sanctuary 42, Blossom Lane, Heritage District';
   const email = contactInfo?.email || 'candycraftssstudio@gmail.com';
-  const phone = contactInfo?.phone || '+91 98765 43210';
+  const phone = contactInfo?.phone || '+91 6382091475';
   const instagramUrl = contactInfo?.instagramUrl || 'https://www.instagram.com/candycrafts2026?stkn=cTY2bnZ3M2Z0dHhy';
 
   return (

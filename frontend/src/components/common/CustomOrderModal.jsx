@@ -58,7 +58,7 @@ export const CustomOrderModal = () => {
 
     // Auto-open WhatsApp to owner for custom inquiry
     try {
-      const ownerPhone = contactInfo?.phone || '+91 98765 43210';
+      const ownerPhone = contactInfo?.whatsappNumber || contactInfo?.phone || '+91 6382091475';
       const waUrl = generateWhatsAppInquiryUrl(newInquiry, ownerPhone);
       window.open(waUrl, '_blank');
     } catch {}

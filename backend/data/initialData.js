@@ -331,7 +331,8 @@ const DEFAULT_CONTACT_INFO = {
   email: 'candycraftssstudio@gmail.com',
   ownerEmail: 'candycraftssstudio@gmail.com',
   emailPass: '',
-  phone: '+91 98765 43210',
+  phone: '+91 6382091475',
+  whatsappNumber: '+91 6382091475',
   hours: 'Monday – Saturday, 10:00 AM – 6:30 PM',
   instagramUrl: 'https://www.instagram.com/candycrafts2026?stkn=cTY2bnZ3M2Z0dHhy',
   instagramHandle: '@candycrafts2026'

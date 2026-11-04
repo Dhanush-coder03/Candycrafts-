@@ -34,11 +34,11 @@ export const AdminContactSettingsPage = () => {
     email: contactInfo?.email || 'candycraftssstudio@gmail.com',
     ownerEmail: contactInfo?.ownerEmail || 'candycraftssstudio@gmail.com',
     emailPass: contactInfo?.emailPass || '',
-    phone: contactInfo?.phone || '',
+    phone: contactInfo?.phone || '+91 6382091475',
     hours: contactInfo?.hours || '',
     instagramUrl: contactInfo?.instagramUrl || '',
     instagramHandle: contactInfo?.instagramHandle || '',
-    whatsappNumber: contactInfo?.whatsappNumber || contactInfo?.phone || '+91 98765 43210',
+    whatsappNumber: contactInfo?.whatsappNumber || contactInfo?.phone || '+91 6382091475',
     whatsappToken: contactInfo?.whatsappToken || '',
     whatsappPhoneNumberId: contactInfo?.whatsappPhoneNumberId || '',
     whatsappBusinessAccountId: contactInfo?.whatsappBusinessAccountId || '',
@@ -60,7 +60,7 @@ export const AdminContactSettingsPage = () => {
         hours: contactInfo.hours ?? prev.hours,
         instagramUrl: contactInfo.instagramUrl ?? prev.instagramUrl,
         instagramHandle: contactInfo.instagramHandle ?? prev.instagramHandle,
-        whatsappNumber: contactInfo.whatsappNumber ?? prev.whatsappNumber ?? prev.phone ?? '+91 98765 43210',
+        whatsappNumber: contactInfo.whatsappNumber ?? prev.whatsappNumber ?? prev.phone ?? '+91 6382091475',
         whatsappToken: contactInfo.whatsappToken ?? prev.whatsappToken ?? '',
         whatsappPhoneNumberId: contactInfo.whatsappPhoneNumberId ?? prev.whatsappPhoneNumberId ?? '',
         whatsappBusinessAccountId: contactInfo.whatsappBusinessAccountId ?? prev.whatsappBusinessAccountId ?? '',
@@ -255,7 +255,7 @@ export const AdminContactSettingsPage = () => {
               required
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="+91 98765 43210 (10 AM - 7 PM IST)"
+              placeholder="+91 6382091475 (10 AM - 7 PM IST)"
               className="w-full px-4 py-2.5 rounded-xl border border-cream-300 text-sm focus:outline-none focus:border-terracotta-500"
             />
           </div>
@@ -517,7 +517,7 @@ export const AdminContactSettingsPage = () => {
                   required
                   value={formData.whatsappNumber}
                   onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
-                  placeholder="+91 98765 43210"
+                  placeholder="+91 6382091475"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-cream-300 bg-white text-sm focus:outline-none focus:border-emerald-500 font-medium text-walnut-900"
                 />
                 <Phone className="w-4 h-4 text-walnut-400 absolute left-3.5 top-3" />

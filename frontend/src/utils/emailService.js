@@ -79,8 +79,13 @@ Candy Crafts Atelier Team`;
   return `mailto:${encodeURIComponent(order.customerEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 };
 
-export const generateOwnerWhatsAppUrl = (order, phone = '+91 98765 43210') => {
-  const cleanPhone = (phone || '+91 98765 43210').replace(/[^0-9]/g, '');
+export const generateOwnerWhatsAppUrl = (order, phone = '+91 6382091475') => {
+  let cleanPhone = (phone || '6382091475').replace(/[^0-9]/g, '');
+  if (cleanPhone.length === 10) {
+    cleanPhone = '91' + cleanPhone;
+  }
+  if (!cleanPhone) cleanPhone = '916382091475';
+
   const itemsText = (order.items || [])
     .map(i => `• ${i.name} (Qty: ${i.quantity}) - Rs. ${(i.price * i.quantity).toLocaleString('en-IN')}`)
     .join('\n');
@@ -132,6 +137,76 @@ Our artisan studio will reach out to you on ${order.customerPhone} shortly to co
 Candy Crafts Atelier Team`;
 
   return cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}` : '#';
+};
+
+/**
+ * Direct 1-Click WhatsApp Order for any clicked product
+ * Directly routes customer to WhatsApp (6382091475) with clicked product details!
+ */
+export const generateDirectProductWhatsAppUrl = (product, quantity = 1, phone = '+91 6382091475') => {
+  if (!product) return '#';
+
+  let cleanPhone = String(phone || '6382091475').replace(/[^0-9]/g, '');
+  if (cleanPhone.length === 10) {
+    cleanPhone = '91' + cleanPhone;
+  }
+  if (!cleanPhone) cleanPhone = '916382091475';
+
+  const unitPrice = product.price || 0;
+  const qty = Math.max(1, Number(quantity) || 1);
+  const totalPrice = unitPrice * qty;
+  
+  const currentOrigin = typeof window !== 'undefined' && window.location?.origin 
+    ? window.location.origin 
+    : '';
+  const productUrl = currentOrigin ? `${currentOrigin}/product/${product.id}` : '';
+
+  const message = `🌸 *CANDY CRAFTS - ORDER NOW* 🌸
+
+Hello Candy Crafts! I want to order this product:
+
+🛍️ *Product:* ${product.name}
+🏷️ *Category:* ${product.category || 'Handcrafted'}
+🔢 *Quantity:* ${qty}
+💰 *Price:* Rs. ${unitPrice.toLocaleString('en-IN')}${qty > 1 ? ` each (Total: Rs. ${totalPrice.toLocaleString('en-IN')})` : ''}
+📦 *Availability:* ${product.available !== false ? 'In Stock & Ready' : 'Made to Order'}
+${product.details?.craftTime ? `⏳ *Crafting Time:* ${product.details.craftTime}\n` : ''}${productUrl ? `🔗 *Product Link:* ${productUrl}\n` : ''}
+Please confirm my order and share the payment and delivery details. Thank you!`;
+
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+};
+
+/**
+ * Direct 1-Click WhatsApp Order for cart items
+ */
+export const generateCartWhatsAppUrl = (cartItems, totalAmount, phone = '+91 6382091475') => {
+  let cleanPhone = String(phone || '6382091475').replace(/[^0-9]/g, '');
+  if (cleanPhone.length === 10) {
+    cleanPhone = '91' + cleanPhone;
+  }
+  if (!cleanPhone) cleanPhone = '916382091475';
+
+  const itemsList = (cartItems || []).map((item, idx) => {
+    const p = item.product || {};
+    const q = item.quantity || 1;
+    return `${idx + 1}. *${p.name || 'Craft Item'}* (Qty: ${q}) - Rs. ${((p.price || 0) * q).toLocaleString('en-IN')}`;
+  }).join('\n');
+
+  const currentOrigin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+
+  const message = `🌸 *CANDY CRAFTS - CART ORDER* 🌸
+
+Hello Candy Crafts! I would like to order the crafts from my bag:
+
+📦 *ORDERED ITEMS:*
+${itemsList}
+
+💰 *TOTAL AMOUNT:* Rs. ${(totalAmount || 0).toLocaleString('en-IN')}
+🎁 *Packaging:* Complimentary Handcrafted Box
+${currentOrigin ? `🛒 *Storefront:* ${currentOrigin}\n` : ''}
+Please confirm availability and share payment and dispatch details. Thank you!`;
+
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
 };
 
 export const generateWhatsAppOrderUrl = generateOwnerWhatsAppUrl;
@@ -230,8 +305,12 @@ Official Email: ${ownerEmail}`;
 /**
  * Generate WhatsApp URL for inquiry
  */
-export const generateWhatsAppInquiryUrl = (inquiry, phone = '+91 98765 43210') => {
-  const cleanPhone = phone.replace(/[^0-9]/g, '');
+export const generateWhatsAppInquiryUrl = (inquiry, phone = '+91 6382091475') => {
+  let cleanPhone = String(phone || '6382091475').replace(/[^0-9]/g, '');
+  if (cleanPhone.length === 10) {
+    cleanPhone = '91' + cleanPhone;
+  }
+  if (!cleanPhone) cleanPhone = '916382091475';
   const text = `Hello Candy Crafts! I have submitted an inquiry on your website:
 Name: ${inquiry.name}
 Topic: ${inquiry.subject || 'Craft Inquiry'}

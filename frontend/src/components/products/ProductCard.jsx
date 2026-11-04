@@ -1,14 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Star, Sparkles } from 'lucide-react';
+import { Eye, Star, Sparkles, MessageCircle } from 'lucide-react';
 import { useCartWishlist } from '../../context/CartWishlistContext';
+import { useProducts } from '../../context/ProductContext';
 import { formatPrice } from '../../utils/formatters';
+import { generateDirectProductWhatsAppUrl } from '../../utils/emailService';
 
 export const ProductCard = ({ product }) => {
   const { setQuickViewProduct } = useCartWishlist();
+  const { contactInfo } = useProducts();
 
   if (!product) return null;
 
+  const targetWhatsApp = contactInfo?.whatsappNumber || contactInfo?.phone || '6382091475';
   const primaryImage = product.images?.[0] || 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=800&auto=format&fit=crop&q=80';
   const secondaryImage = product.images?.[1] || primaryImage;
 
@@ -43,15 +47,28 @@ export const ProductCard = ({ product }) => {
           )}
         </div>
 
-        {/* Hover Quick View Button */}
-        <div className="absolute inset-x-4 bottom-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-10">
+        {/* Hover Quick View & Order Now Buttons */}
+        <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-10 flex gap-2">
           <button
             onClick={() => setQuickViewProduct(product)}
-            className="w-full py-2.5 px-4 rounded-full bg-white/95 backdrop-blur-md hover:bg-white text-walnut-800 text-xs font-semibold shadow-soft border border-cream-200 flex items-center justify-center gap-2 transition active:scale-95"
-            title="Quick view & order"
+            className="flex-1 py-2 px-2.5 rounded-full bg-white/95 backdrop-blur-md hover:bg-white text-walnut-800 text-[11px] font-semibold shadow-soft border border-cream-200 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+            title="Quick view"
           >
             <Eye className="w-3.5 h-3.5 text-terracotta-500" />
-            <span>Quick View & Order</span>
+            <span>Quick View</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const waUrl = generateDirectProductWhatsAppUrl(product, 1, targetWhatsApp);
+              window.open(waUrl, '_blank');
+            }}
+            className="flex-1 py-2 px-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold shadow-soft flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+            title="Order now on WhatsApp"
+          >
+            <MessageCircle className="w-3.5 h-3.5 fill-white/20" />
+            <span>Order Now</span>
           </button>
         </div>
       </div>
@@ -99,12 +116,30 @@ export const ProductCard = ({ product }) => {
             )}
           </div>
 
-          <Link
-            to={`/product/${product.id}`}
-            className="text-xs font-semibold text-terracotta-600 hover:text-terracotta-700 transition flex items-center gap-1"
-          >
-            Order / Details →
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const waUrl = generateDirectProductWhatsAppUrl(product, 1, targetWhatsApp);
+                window.open(waUrl, '_blank');
+              }}
+              className="py-1.5 px-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
+              title="Order directly on WhatsApp (+91 63820 91475)"
+            >
+              <MessageCircle className="w-3.5 h-3.5 fill-white/20" />
+              <span>Order Now</span>
+            </button>
+
+            <Link
+              to={`/product/${product.id}`}
+              className="text-xs font-semibold text-walnut-500 hover:text-terracotta-600 transition"
+              title="View craft details"
+            >
+              Details →
+            </Link>
+          </div>
         </div>
 
       </div>

@@ -10,7 +10,9 @@ import {
   Clock, 
   Truck,
   Send,
-  Sparkles
+  Sparkles,
+  Calendar,
+  Layers
 } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { formatPrice, formatDate } from '../../utils/formatters';
@@ -33,6 +35,11 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
   if (!order) return null;
 
   const ownerEmail = contactInfo?.ownerEmail || contactInfo?.email || 'candycraftssstudio@gmail.com';
+  const isCustom = order.type === 'Bespoke Custom Order' || !!order.craftType;
+
+  const waCustomerMessage = isCustom
+    ? `Hello ${order.customerName}! We have received your Bespoke Custom Craft Order #${order.id} for "${order.craftType || order.items?.[0]?.name || 'Custom Craft'}" at Candy Crafts studio. We would love to discuss your design preferences, color palette, and crafting timeline!`
+    : `Hello ${order.customerName}! We have received your order #${order.id} at Candy Crafts studio.`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-walnut-950/60 backdrop-blur-xs animate-fade-in">
@@ -41,10 +48,16 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
         {/* Modal Header */}
         <div className="p-6 border-b border-cream-200 bg-cream-50/70 flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="font-mono text-sm font-bold text-terracotta-600">
                 Order #{order.id}
               </span>
+              {isCustom && (
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-purple-100 text-purple-700 border-purple-200 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-purple-500" />
+                  Bespoke Custom Order
+                </span>
+              )}
               <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${STATUS_COLORS[order.status]?.bg || ''}`}>
                 {order.status}
               </span>
@@ -65,6 +78,47 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
 
         {/* Modal Content */}
         <div className="p-6 overflow-y-auto space-y-6">
+
+          {/* Bespoke Custom Highlight Card if custom */}
+          {isCustom && (
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-50/90 to-terracotta-50/60 border border-purple-200 space-y-3">
+              <div className="flex items-center gap-2 text-purple-800">
+                <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  Bespoke Custom Craft Specifications
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                <div className="bg-white/80 p-3 rounded-xl border border-purple-100">
+                  <span className="text-[10px] uppercase font-bold text-walnut-400 block mb-0.5">
+                    Creation Type
+                  </span>
+                  <span className="text-xs font-bold text-walnut-900 block">
+                    {order.craftType || order.items?.[0]?.name || 'Custom Handcrafted'}
+                  </span>
+                </div>
+
+                <div className="bg-white/80 p-3 rounded-xl border border-purple-100">
+                  <span className="text-[10px] uppercase font-bold text-walnut-400 block mb-0.5">
+                    Estimated Budget
+                  </span>
+                  <span className="text-xs font-bold text-terracotta-600 block">
+                    {order.budget || formatPrice(order.totalAmount)}
+                  </span>
+                </div>
+
+                <div className="bg-white/80 p-3 rounded-xl border border-purple-100">
+                  <span className="text-[10px] uppercase font-bold text-walnut-400 block mb-0.5">
+                    Date Needed
+                  </span>
+                  <span className="text-xs font-bold text-walnut-800 block">
+                    {order.dateNeeded || 'Flexible / Asap'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Customer Contact & Delivery Box */}
           <div className="bg-cream-50/90 rounded-2xl p-5 border border-cream-200 space-y-4">
@@ -94,7 +148,7 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
                   </a>
                   {order.customerPhone && (
                     <a
-                      href={`https://wa.me/${order.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${order.customerName}! We have received your order #${order.id} at Candy Crafts studio.`)}`}
+                      href={`https://wa.me/${order.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(waCustomerMessage)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-2.5 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-semibold flex items-center gap-1 transition"
@@ -113,14 +167,14 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
                   {order.customerEmail ? (
                     <>
                       <a
-                        href={`mailto:${order.customerEmail}?subject=${encodeURIComponent(`Candy Crafts Order #${order.id} Update`)}`}
+                        href={`mailto:${order.customerEmail}?subject=${encodeURIComponent(`Candy Crafts ${isCustom ? 'Custom Order' : 'Order'} #${order.id} Update`)}`}
                         className="text-sm font-semibold text-terracotta-600 hover:underline flex items-center gap-1.5"
                       >
                         <Mail className="w-4 h-4 text-terracotta-500" />
                         <span>{order.customerEmail}</span>
                       </a>
                       <a
-                        href={`mailto:${order.customerEmail}?subject=${encodeURIComponent(`Candy Crafts Order #${order.id} Update`)}`}
+                        href={`mailto:${order.customerEmail}?subject=${encodeURIComponent(`Candy Crafts ${isCustom ? 'Custom Order' : 'Order'} #${order.id} Update`)}`}
                         className="px-2.5 py-1 rounded-full bg-cream-200 hover:bg-cream-300 text-walnut-800 text-[10px] font-semibold transition"
                       >
                         Send Gmail Reply
@@ -129,28 +183,30 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
                   ) : (
                     <span className="text-xs text-walnut-500 italic flex items-center gap-1">
                       <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                      Direct WhatsApp Order (No email required)
+                      Direct WhatsApp Customer (No email required)
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Shipping Address */}
+              {/* Shipping Address / Craft Destination */}
               <div className="space-y-1 sm:col-span-2 pt-2 border-t border-cream-200">
                 <span className="text-xs text-walnut-400 block font-medium flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-terracotta-500" />
-                  <span>Delivery Address</span>
+                  <span>{isCustom ? 'Custom Craft Details / Address' : 'Delivery Address'}</span>
                 </span>
                 <p className="text-xs text-walnut-800 font-medium whitespace-pre-line leading-relaxed">
-                  {order.shippingAddress || 'No shipping address specified'}
+                  {order.shippingAddress || 'Direct WhatsApp Order - Details to be finalized'}
                 </p>
               </div>
 
-              {/* Special Note / Gift Message */}
+              {/* Special Note / Vision Description */}
               {order.notes && (
                 <div className="space-y-1 sm:col-span-2 pt-2 border-t border-cream-200">
-                  <span className="text-xs text-walnut-400 block font-medium">Gift Ribbon / Note Request</span>
-                  <blockquote className="text-xs italic text-walnut-700 bg-white p-3 rounded-xl border border-cream-200">
+                  <span className="text-xs text-walnut-400 block font-medium">
+                    {isCustom ? 'Customer Vision, Colors & Notes' : 'Gift Ribbon / Note Request'}
+                  </span>
+                  <blockquote className="text-xs italic text-walnut-700 bg-white p-3 rounded-xl border border-cream-200 whitespace-pre-line">
                     "{order.notes}"
                   </blockquote>
                 </div>
@@ -164,7 +220,7 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-terracotta-600" />
                 <span className="text-xs font-bold text-walnut-900 uppercase tracking-wider">
-                  Email Dispatch & Communications
+                  Communications & Updates
                 </span>
               </div>
               <span className="text-[11px] text-walnut-600 bg-white px-2.5 py-0.5 rounded-full border border-cream-300">
@@ -172,19 +228,30 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
               </span>
             </div>
 
-            <p className="text-[11px] text-walnut-600 leading-relaxed">
-              இந்த Order-க்கான Confirmation-ஐ Owner Email ({ownerEmail})-ல் இருந்து வாடிக்கையாளரின் Gmail ({order.customerEmail})-க்கு உடனடியாக அனுப்பலாம்:
-            </p>
-
             <div className="flex flex-wrap gap-2 pt-1">
-              {/* Send Confirmation to Customer */}
-              <a
-                href={generateCustomerConfirmationEmail(order, ownerEmail)}
-                className="px-4 py-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Send Confirmation to Customer ({order.customerEmail})</span>
-              </a>
+              {/* WhatsApp Customer */}
+              {order.customerPhone && (
+                <a
+                  href={`https://wa.me/${order.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(waCustomerMessage)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Chat with Customer on WhatsApp</span>
+                </a>
+              )}
+
+              {/* Send Confirmation to Customer if email present */}
+              {order.customerEmail && (
+                <a
+                  href={generateCustomerConfirmationEmail(order, ownerEmail)}
+                  className="px-4 py-2 rounded-full bg-terracotta-500 hover:bg-terracotta-600 text-white text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send Email Confirmation ({order.customerEmail})</span>
+                </a>
+              )}
 
               {/* Forward to Owner Email */}
               <a
@@ -194,25 +261,13 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
                 <Mail className="w-3.5 h-3.5 text-terracotta-600" />
                 <span>Send Query to Owner ({ownerEmail})</span>
               </a>
-
-              {order.customerPhone && (
-                <a
-                  href={`https://wa.me/${order.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${order.customerName}! We have received your order query #${order.id} for ${order.items?.[0]?.name} at Candy Crafts studio.`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition flex items-center gap-1.5"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span>WhatsApp Customer</span>
-                </a>
-              )}
             </div>
           </div>
 
           {/* Order Items List */}
           <div className="space-y-3">
             <span className="text-xs font-semibold text-walnut-700 uppercase tracking-wider block">
-              Ordered Crafts ({order.items?.length || 0})
+              Craft Items ({order.items?.length || 1})
             </span>
 
             <div className="space-y-2">
@@ -232,17 +287,17 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
                         {item.name}
                       </span>
                       <span className="text-walnut-400 text-[11px]">
-                        {item.category} • Qty: {item.quantity}
+                        {item.category || (isCustom ? 'Bespoke Custom' : 'Handmade')} • Qty: {item.quantity}
                       </span>
                     </div>
                   </div>
 
                   <div className="text-right">
                     <span className="font-semibold text-walnut-900 text-sm block">
-                      {formatPrice(item.price * item.quantity)}
+                      {order.budget ? order.budget : formatPrice(item.price * item.quantity)}
                     </span>
                     <span className="text-[10px] text-walnut-400">
-                      {formatPrice(item.price)} each
+                      Est. value
                     </span>
                   </div>
                 </div>
@@ -251,16 +306,18 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
 
             <div className="p-4 bg-cream-50 rounded-2xl border border-cream-200 space-y-1.5 text-xs">
               <div className="flex justify-between text-walnut-600">
-                <span>Subtotal:</span>
-                <span className="font-medium">{formatPrice(order.totalAmount)}</span>
+                <span>Estimated Craft Value:</span>
+                <span className="font-medium">{order.budget ? order.budget : formatPrice(order.totalAmount)}</span>
               </div>
               <div className="flex justify-between text-walnut-600">
-                <span>Artisanal Packaging & Shipping:</span>
-                <span className="text-sage-600 font-medium">Complimentary</span>
+                <span>Packaging & Craft Presentation:</span>
+                <span className="text-sage-600 font-medium">Complimentary Artisan Box</span>
               </div>
               <div className="flex justify-between pt-2 border-t border-cream-200 font-sans text-base font-bold text-walnut-900">
-                <span>Grand Total:</span>
-                <span className="text-terracotta-600 font-sans font-bold">{formatPrice(order.totalAmount)}</span>
+                <span>Total / Budget:</span>
+                <span className="text-terracotta-600 font-sans font-bold">
+                  {order.budget ? order.budget : formatPrice(order.totalAmount)}
+                </span>
               </div>
             </div>
           </div>
@@ -270,14 +327,14 @@ export const OrderDetailsModal = ({ order, onClose, onUpdateStatus, onDelete }) 
             <div className="p-4 bg-terracotta-50/50 rounded-2xl border border-terracotta-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <span className="text-xs font-semibold text-walnut-900 block">Update Order Status</span>
-                <span className="text-[11px] text-walnut-500">Change fulfillment status</span>
+                <span className="text-[11px] text-walnut-500">Change fulfillment or crafting stage</span>
               </div>
               <select
                 value={order.status}
                 onChange={(e) => onUpdateStatus(order.id, e.target.value)}
                 className="px-4 py-2 rounded-xl border border-cream-300 bg-white text-xs font-semibold text-walnut-800 focus:outline-none focus:border-terracotta-500"
               >
-                <option value="Pending">Pending (Crafting not started)</option>
+                <option value="Pending">Pending (Crafting inquiry received)</option>
                 <option value="Processing">Processing (Handcrafting in progress)</option>
                 <option value="Shipped">Shipped (Dispatched with tracking)</option>
                 <option value="Delivered">Delivered (Safely received)</option>

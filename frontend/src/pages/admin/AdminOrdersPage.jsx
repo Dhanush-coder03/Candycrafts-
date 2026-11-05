@@ -60,18 +60,28 @@ export const AdminOrdersPage = () => {
 
   // Stats
   const totalOrders = orders.length;
+  const customOrdersCount = orders.filter(o => o.type === 'Bespoke Custom Order' || o.craftType).length;
   const pendingOrders = orders.filter(o => o.status === 'Pending').length;
   const deliveredOrders = orders.filter(o => o.status === 'Delivered').length;
   const totalRevenue = orders.reduce((sum, o) => sum + (o.status !== 'Cancelled' ? (o.totalAmount || 0) : 0), 0);
 
   // Filtered Orders
   const filteredOrders = orders.filter((order) => {
-    const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
+    let matchesStatus = true;
+    if (statusFilter === 'CUSTOM') {
+      matchesStatus = order.type === 'Bespoke Custom Order' || !!order.craftType;
+    } else if (statusFilter !== 'ALL') {
+      matchesStatus = order.status === statusFilter;
+    }
+
     const matchesSearch =
       order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerPhone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase());
+      order.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.craftType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.notes?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
@@ -100,21 +110,21 @@ export const AdminOrdersPage = () => {
         </div>
 
         <div className="bg-white p-5 rounded-3xl border border-cream-200 shadow-soft">
+          <div className="flex items-center justify-between text-purple-700 text-xs font-semibold uppercase">
+            <span>Custom Orders</span>
+            <Sparkles className="w-4 h-4 text-purple-500" />
+          </div>
+          <div className="mt-2 font-serif text-3xl font-bold text-purple-700">{customOrdersCount}</div>
+          <span className="text-[11px] text-purple-600 font-medium">Bespoke craft inquiries</span>
+        </div>
+
+        <div className="bg-white p-5 rounded-3xl border border-cream-200 shadow-soft">
           <div className="flex items-center justify-between text-amber-700 text-xs font-semibold uppercase">
             <span>Pending Action</span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
           <div className="mt-2 font-serif text-3xl font-bold text-amber-600">{pendingOrders}</div>
           <span className="text-[11px] text-amber-600 font-medium">Awaiting studio crafting</span>
-        </div>
-
-        <div className="bg-white p-5 rounded-3xl border border-cream-200 shadow-soft">
-          <div className="flex items-center justify-between text-emerald-700 text-xs font-semibold uppercase">
-            <span>Delivered Crafts</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          </div>
-          <div className="mt-2 font-serif text-3xl font-bold text-emerald-700">{deliveredOrders}</div>
-          <span className="text-[11px] text-emerald-600 font-medium">Successfully completed</span>
         </div>
 
         <div className="bg-white p-5 rounded-3xl border border-cream-200 shadow-soft">
@@ -138,7 +148,7 @@ export const AdminOrdersPage = () => {
               Owner Order Queries Inbox: {ownerEmail}
             </span>
             <span className="text-[11px] text-walnut-600">
-              வாடிக்கையாளர்கள் Website-ல் போடும் Order Query-கள் இந்த Owner Email-க்கு தான் வந்து சேரும். Click an order to send confirmation directly.
+              Orders and Bespoke Custom Crafts are saved directly in MongoDB and synced here in real time.
             </span>
           </div>
         </div>
@@ -156,7 +166,7 @@ export const AdminOrdersPage = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by Customer Name, Phone, Gmail or Order ID..."
+            placeholder="Search by Name, Phone, Email, Craft Type, Order ID..."
             className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-cream-300 bg-cream-50/50 focus:outline-none focus:border-terracotta-500 text-walnut-900"
           />
           {searchTerm && (
@@ -172,16 +182,24 @@ export const AdminOrdersPage = () => {
         {/* Filter Pills & Live Sync Button */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
           <div className="flex items-center gap-1.5">
-            {['ALL', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map((status) => (
+            {[
+              { id: 'ALL', label: 'All Orders' },
+              { id: 'CUSTOM', label: `✨ Custom Orders (${customOrdersCount})` },
+              { id: 'Pending', label: 'Pending' },
+              { id: 'Processing', label: 'Processing' },
+              { id: 'Shipped', label: 'Shipped' },
+              { id: 'Delivered', label: 'Delivered' },
+              { id: 'Cancelled', label: 'Cancelled' }
+            ].map((f) => (
               <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition whitespace-nowrap ${statusFilter === status
+                key={f.id}
+                onClick={() => setStatusFilter(f.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition whitespace-nowrap ${statusFilter === f.id
                   ? 'bg-terracotta-500 text-white shadow-xs'
                   : 'bg-cream-100 text-walnut-600 hover:bg-cream-200'
                   }`}
               >
-                {status === 'ALL' ? 'All Orders' : status}
+                {f.label}
               </button>
             ))}
           </div>
@@ -209,8 +227,8 @@ export const AdminOrdersPage = () => {
             <h3 className="font-serif text-lg font-semibold text-walnut-800">No Orders Found</h3>
             <p className="text-xs text-walnut-500 max-w-sm mx-auto">
               {searchTerm
-                ? `No orders matching "${searchTerm}". Try a different name, phone, or Gmail.`
-                : 'When customers place orders from the store, they will appear here instantly.'}
+                ? `No orders matching "${searchTerm}". Try a different name, phone, or craft type.`
+                : 'When customers place orders or bespoke craft inquiries, they will appear here instantly.'}
             </p>
           </div>
         ) : (
@@ -221,8 +239,8 @@ export const AdminOrdersPage = () => {
                   <th className="py-4 px-6">Order ID & Date</th>
                   <th className="py-4 px-4">Customer Details</th>
                   <th className="py-4 px-4">Phone / WhatsApp</th>
-                  <th className="py-4 px-4">Items</th>
-                  <th className="py-4 px-4">Total</th>
+                  <th className="py-4 px-4">Items / Craft Type</th>
+                  <th className="py-4 px-4">Total / Budget</th>
                   <th className="py-4 px-4">Status</th>
                   <th className="py-4 px-6 text-right">Actions</th>
                 </tr>
@@ -230,17 +248,27 @@ export const AdminOrdersPage = () => {
               <tbody className="divide-y divide-cream-100 text-sm">
                 {filteredOrders.map((order) => {
                   const statusStyle = STATUS_COLORS[order.status] || STATUS_COLORS.Pending;
+                  const isCustom = order.type === 'Bespoke Custom Order' || !!order.craftType;
+
                   return (
                     <tr
                       key={order.id}
                       onClick={() => setSelectedOrder(order)}
-                      className="hover:bg-cream-50/50 transition cursor-pointer group"
+                      className={`hover:bg-cream-50/50 transition cursor-pointer group ${isCustom ? 'bg-purple-50/20' : ''}`}
                     >
                       {/* Order ID & Date */}
                       <td className="py-4 px-6">
-                        <span className="font-mono text-xs font-bold text-terracotta-600 block">
-                          #{order.id}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono text-xs font-bold text-terracotta-600 block">
+                            #{order.id}
+                          </span>
+                          {isCustom && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                              <Sparkles className="w-3 h-3 text-purple-500" />
+                              Custom Craft
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[11px] text-walnut-400 block mt-0.5">
                           {formatDate(order.createdAt)}
                         </span>
@@ -278,7 +306,7 @@ export const AdminOrdersPage = () => {
 
                           {order.customerPhone && (
                             <a
-                              href={`https://wa.me/${order.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${order.customerName}! Regarding your Candy Crafts Order #${order.id}...`)}`}
+                              href={`https://wa.me/${order.customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${order.customerName}! Regarding your Candy Crafts ${isCustom ? 'Bespoke Custom Order' : 'Order'} #${order.id}...`)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="p-1 text-emerald-600 hover:bg-emerald-50 rounded-md transition"
@@ -290,7 +318,7 @@ export const AdminOrdersPage = () => {
                         </div>
                       </td>
 
-                      {/* Items Preview */}
+                      {/* Items / Craft Type Preview */}
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
                           {order.items?.[0]?.image && (
@@ -301,21 +329,30 @@ export const AdminOrdersPage = () => {
                             />
                           )}
                           <div>
-                            <span className="text-xs text-walnut-800 font-medium block truncate max-w-[150px]">
-                              {order.items?.[0]?.name || 'Craft Product'}
+                            <span className="text-xs text-walnut-800 font-medium block truncate max-w-[180px]">
+                              {order.craftType || order.items?.[0]?.name || 'Craft Product'}
                             </span>
-                            <span className="text-[10px] text-walnut-400">
-                              {order.items?.length || 1} {order.items?.length === 1 ? 'craft item' : 'craft items'}
+                            <span className="text-[10px] text-walnut-400 block">
+                              {isCustom ? (
+                                order.dateNeeded ? `Needed: ${order.dateNeeded}` : 'Bespoke Inquiry'
+                              ) : (
+                                `${order.items?.length || 1} craft item${(order.items?.length || 1) > 1 ? 's' : ''}`
+                              )}
                             </span>
                           </div>
                         </div>
                       </td>
 
-                      {/* Total Amount */}
+                      {/* Total Amount / Budget */}
                       <td className="py-4 px-4">
-                        <span className="font-sans font-bold text-walnut-900 text-sm">
-                          {formatPrice(order.totalAmount)}
+                        <span className="font-sans font-bold text-walnut-900 text-sm block">
+                          {order.budget ? order.budget : formatPrice(order.totalAmount)}
                         </span>
+                        {order.budget && (
+                          <span className="text-[10px] text-terracotta-600 font-medium">
+                            Est. {formatPrice(order.totalAmount)}
+                          </span>
+                        )}
                       </td>
 
                       {/* Status */}
@@ -339,7 +376,7 @@ export const AdminOrdersPage = () => {
                           <button
                             onClick={() => setSelectedOrder(order)}
                             className="p-1.5 text-walnut-500 hover:text-terracotta-600 hover:bg-cream-100 rounded-lg transition"
-                            title="Click to view Customer Phone, Name & Gmail"
+                            title="Click to view Customer Phone, Name & Details"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -367,7 +404,7 @@ export const AdminOrdersPage = () => {
         onClose={() => setSelectedOrder(null)}
         onUpdateStatus={(id, status) => {
           updateOrderStatus(id, status);
-          setSelectedOrder(prev => ({ ...prev, status }));
+          setSelectedOrder(prev => (prev?.id === id ? { ...prev, status } : prev));
         }}
         onDelete={(id) => {
           if (window.confirm(`Are you sure you want to delete order #${id}?`)) {

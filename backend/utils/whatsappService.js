@@ -67,6 +67,33 @@ const getStudioContact = async () => {
  * Generate formatted WhatsApp message for the Owner
  */
 const formatOwnerWhatsAppMessage = (order, studioPhone, brandName) => {
+  const isCustom = order.type === 'Bespoke Custom Order' || !!order.craftType;
+
+  if (isCustom) {
+    return `🔔 *${brandName.toUpperCase()} - NEW BESPOKE CUSTOM CRAFT INQUIRY* 🔔
+
+A new bespoke custom craft request has been placed on the website!
+
+• *Order ID:* #${order.id}
+• *Date:* ${new Date(order.createdAt || Date.now()).toLocaleDateString('en-IN')}
+
+👤 *CUSTOMER CONTACT DETAILS:*
+• *Name:* ${order.customerName}
+• *Phone / WhatsApp:* ${order.customerPhone}
+${order.customerEmail ? `• *Gmail / Email:* ${order.customerEmail}\n` : ''}
+🎨 *BESPOKE SPECIFICATIONS:*
+• *Creation Type:* ${order.craftType || order.items?.[0]?.name || 'Custom Craft'}
+• *Estimated Budget:* ${order.budget || ('Rs. ' + (order.totalAmount || 0).toLocaleString('en-IN'))}
+• *Date Needed:* ${order.dateNeeded || 'Flexible'}
+
+📝 *CUSTOMER VISION & COLOR PALETTE:*
+"${order.notes || 'Bespoke handcrafted custom inquiry'}"
+
+💰 *ESTIMATED VALUE:* Rs. ${(order.totalAmount || 0).toLocaleString('en-IN')}
+
+👉 Action: Please contact customer at ${order.customerPhone} or ${order.customerEmail || 'WhatsApp'} to discuss design references and crafting schedule.`;
+  }
+
   const itemsText = (order.items || [])
     .map(i => `• ${i.name} (Qty: ${i.quantity}) - Rs. ${(i.price * i.quantity).toLocaleString('en-IN')}`)
     .join('\n');
@@ -98,6 +125,25 @@ ${itemsText}
  * Generate formatted WhatsApp message for the Customer
  */
 const formatCustomerWhatsAppMessage = (order, studioPhone, brandName) => {
+  const isCustom = order.type === 'Bespoke Custom Order' || !!order.craftType;
+
+  if (isCustom) {
+    return `🌸 *${brandName.toUpperCase()} - BESPOKE CRAFT INQUIRY RECEIVED* 🌸
+
+Dear *${order.customerName}*,
+
+Thank you for choosing ${brandName}! Your bespoke custom craft request #${order.id} has been received by our atelier.
+
+🎨 *CRAFT TYPE:* ${order.craftType || order.items?.[0]?.name || 'Custom Craft'}
+💰 *ESTIMATED BUDGET:* ${order.budget || ('Rs. ' + (order.totalAmount || 0).toLocaleString('en-IN'))}
+⏳ *DATE NEEDED:* ${order.dateNeeded || 'Flexible'}
+
+Our artisan studio team will reach out to you on ${order.customerPhone} shortly to finalize your bespoke floral design and crafting timeline.
+
+Warm regards,
+*${brandName} Artisan Atelier*`;
+  }
+
   const itemsText = (order.items || [])
     .map(i => `• ${i.name} (Qty: ${i.quantity}) - Rs. ${(i.price * i.quantity).toLocaleString('en-IN')}`)
     .join('\n');

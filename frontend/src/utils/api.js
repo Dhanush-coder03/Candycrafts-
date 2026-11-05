@@ -116,6 +116,12 @@ export const api = {
       body: JSON.stringify({ status })
     });
   },
+  updateOrder: async (id, orderData) => {
+    return apiRequest(`/orders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(orderData)
+    });
+  },
   deleteOrder: async (id) => {
     return apiRequest(`/orders/${id}`, { method: 'DELETE' });
   },

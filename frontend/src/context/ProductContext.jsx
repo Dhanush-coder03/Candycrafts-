@@ -371,6 +371,24 @@ export const ProductProvider = ({ children }) => {
     }
   };
 
+  const updateOrder = async (orderId, orderData) => {
+    const original = orders.find(o => o.id === orderId);
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...orderData } : o));
+    showToast(`Order #${orderId} updated!`, 'success');
+
+    try {
+      const res = await api.updateOrder(orderId, orderData);
+      if (res?.data) {
+        setOrders(prev => prev.map(o => o.id === orderId ? res.data : o));
+        return res.data;
+      }
+    } catch (err) {
+      if (original) setOrders(prev => prev.map(o => o.id === orderId ? original : o));
+      showToast(`Update failed: ${err.message}`, 'error');
+      throw err;
+    }
+  };
+
   const deleteOrder = async (orderId) => {
     const original = orders.find(o => o.id === orderId);
     setOrders(prev => prev.filter(o => o.id !== orderId));
@@ -546,6 +564,7 @@ export const ProductProvider = ({ children }) => {
         // Orders
         placeOrder,
         updateOrderStatus,
+        updateOrder,
         deleteOrder,
         refreshOrders,
         notifyOrderWhatsApp: (id) => api.notifyOrderWhatsApp(id),

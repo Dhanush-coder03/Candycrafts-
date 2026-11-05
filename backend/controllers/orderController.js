@@ -82,6 +82,26 @@ exports.createOrder = async (req, res) => {
   }
 };
 
+// @desc    Update entire order or any field
+// @route   PUT /api/orders/:id
+exports.updateOrder = async (req, res) => {
+  try {
+    const order = await Order.findOneAndUpdate(
+      { id: req.params.id },
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    res.json({ success: true, data: order });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Update order status
 // @route   PUT /api/orders/:id/status
 exports.updateOrderStatus = async (req, res) => {

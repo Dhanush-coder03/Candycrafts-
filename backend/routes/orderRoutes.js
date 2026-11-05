@@ -4,6 +4,7 @@ const {
   getOrders,
   getOrderById,
   createOrder,
+  updateOrder,
   updateOrderStatus,
   deleteOrder,
   notifyOrderWhatsApp
@@ -15,6 +16,7 @@ router.route('/')
 
 router.route('/:id')
   .get(getOrderById)
+  .put(updateOrder)
   .delete(deleteOrder);
 
 router.route('/:id/status')

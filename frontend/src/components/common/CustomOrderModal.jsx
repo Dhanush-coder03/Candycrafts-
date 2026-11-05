@@ -1,19 +1,38 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Send, CheckCircle2, Mail, MessageCircle } from 'lucide-react';
+import { X, Sparkles, Send, CheckCircle2, Mail, MessageCircle, Clock, ShoppingBag } from 'lucide-react';
 import { useCartWishlist } from '../../context/CartWishlistContext';
 import { useProducts } from '../../context/ProductContext';
 import { 
   generateOwnerInquiryEmail, 
   generateCustomerInquiryConfirmationEmail, 
-  generateWhatsAppInquiryUrl 
+  generateWhatsAppBespokeCustomOrderUrl 
 } from '../../utils/emailService';
 import confetti from 'canvas-confetti';
 
+const CRAFT_IMAGES = {
+  'Handmade Bridal Bouquet': 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=800&auto=format&fit=crop&q=80',
+  'Paper Flowers in Glass Dome': 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=800&auto=format&fit=crop&q=80',
+  'Custom Handcrafted Idol': 'https://images.unsplash.com/photo-1582560475093-ba66accbc424?w=800&auto=format&fit=crop&q=80',
+  'Anniversary Keepsake Box': 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&auto=format&fit=crop&q=80',
+  'Bespoke Living Room Arrangement': 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=800&auto=format&fit=crop&q=80',
+};
+
+const parseBudgetAmount = (budgetString) => {
+  if (!budgetString) return 1500;
+  if (budgetString.includes('Under')) return 1200;
+  if (budgetString.includes('1,500 - ₹3,000') || budgetString.includes('1500')) return 2000;
+  if (budgetString.includes('3,000 - ₹6,000') || budgetString.includes('3000')) return 4500;
+  if (budgetString.includes('6,000+') || budgetString.includes('6000')) return 6500;
+  const match = budgetString.replace(/,/g, '').match(/\d+/);
+  return match ? Number(match[0]) : 1500;
+};
+
 export const CustomOrderModal = () => {
   const { isCustomOrderOpen, setIsCustomOrderOpen } = useCartWishlist();
-  const { showToast, addInquiry, contactInfo } = useProducts();
+  const { showToast, addInquiry, placeOrder, contactInfo } = useProducts();
 
-  const [submittedInquiry, setSubmittedInquiry] = useState(null);
+  const [submittedOrder, setSubmittedOrder] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -27,8 +46,9 @@ export const CustomOrderModal = () => {
   if (!isCustomOrderOpen) return null;
 
   const ownerEmail = contactInfo?.ownerEmail || contactInfo?.email || 'candycraftssstudio@gmail.com';
+  const ownerPhone = contactInfo?.whatsappNumber || contactInfo?.phone || '+91 6382091475';
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.name.trim() || !formData.phone.trim()) {
@@ -36,38 +56,118 @@ export const CustomOrderModal = () => {
       return;
     }
 
-    // Save to customer inquiries so Admin can view it and sync with server
-    const newInquiry = addInquiry({
+    setIsSubmitting(true);
+
+    const year = new Date().getFullYear();
+    const generatedOrderId = `ORD-${year}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const numericBudget = parseBudgetAmount(formData.budget);
+    const craftImage = CRAFT_IMAGES[formData.craftType] || CRAFT_IMAGES['Handmade Bridal Bouquet'];
+
+    // 1. Prepare WhatsApp URL with all entered details immediately
+    const bespokePayload = {
+      orderId: generatedOrderId,
+      id: generatedOrderId,
       name: formData.name.trim(),
-      email: formData.email.trim() || 'candycraftssstudio@gmail.com',
+      customerName: formData.name.trim(),
       phone: formData.phone.trim(),
-      subject: `Custom Craft: ${formData.craftType} (${formData.budget})`,
-      message: `Preferred Date: ${formData.dateNeeded || 'Flexible'}\nBudget: ${formData.budget}\nNotes: ${formData.notes.trim() || 'Bespoke custom creation request'}`,
-      type: 'Custom Craft Request'
-    });
+      customerPhone: formData.phone.trim(),
+      email: formData.email.trim(),
+      customerEmail: formData.email.trim(),
+      craftType: formData.craftType,
+      budget: formData.budget,
+      dateNeeded: formData.dateNeeded,
+      notes: formData.notes.trim() || 'Bespoke custom creation request'
+    };
 
-    setSubmittedInquiry(newInquiry);
+    const waUrl = generateWhatsAppBespokeCustomOrderUrl(bespokePayload, ownerPhone);
 
+    // 2. Open WhatsApp chat directly in new tab upon user submission gesture
     try {
-      confetti({
-        particleCount: 70,
-        spread: 60,
-        origin: { y: 0.5 }
-      });
-    } catch {}
-
-    // Auto-open WhatsApp to owner for custom inquiry
-    try {
-      const ownerPhone = contactInfo?.whatsappNumber || contactInfo?.phone || '+91 6382091475';
-      const waUrl = generateWhatsAppInquiryUrl(newInquiry, ownerPhone);
       window.open(waUrl, '_blank');
-    } catch {}
+    } catch (err) {
+      console.warn('WhatsApp auto-open popup blocked, user can click direct button:', err);
+    }
 
-    showToast('Your custom craft inquiry has been sent! We will contact you soon.', 'success');
+    // 3. Save as an Order in MongoDB Atlas so it appears in Admin Orders
+    try {
+      const orderPayload = {
+        id: generatedOrderId,
+        customerName: formData.name.trim(),
+        customerPhone: formData.phone.trim(),
+        customerEmail: formData.email.trim(),
+        shippingAddress: `Bespoke Custom Craft: ${formData.craftType} (Date Needed: ${formData.dateNeeded || 'Flexible'})`,
+        notes: `Custom Order Specifications:
+• Creation Type: ${formData.craftType}
+• Estimated Budget: ${formData.budget}
+• Target Date: ${formData.dateNeeded || 'Flexible / As early as possible'}
+• Vision / Colors / Requests:
+${formData.notes.trim() || 'Bespoke custom creation request'}`,
+        craftType: formData.craftType,
+        budget: formData.budget,
+        dateNeeded: formData.dateNeeded || 'Flexible',
+        items: [
+          {
+            id: `custom-${Date.now()}`,
+            name: `Bespoke: ${formData.craftType}`,
+            price: numericBudget,
+            quantity: 1,
+            image: craftImage,
+            category: 'Bespoke Custom'
+          }
+        ],
+        totalAmount: numericBudget,
+        type: 'Bespoke Custom Order',
+        status: 'Pending'
+      };
+
+      const savedOrder = await placeOrder(orderPayload);
+
+      // 4. Also record in Customer Inquiries so it syncs across inquiries too
+      try {
+        await addInquiry({
+          name: formData.name.trim(),
+          email: formData.email.trim() || ownerEmail,
+          phone: formData.phone.trim(),
+          subject: `Bespoke Custom Craft: ${formData.craftType} (${formData.budget})`,
+          message: `Order ID: #${generatedOrderId}\nPreferred Date: ${formData.dateNeeded || 'Flexible'}\nBudget: ${formData.budget}\nNotes: ${formData.notes.trim() || 'Bespoke custom creation request'}`,
+          type: 'Bespoke Custom Order'
+        });
+      } catch (inqErr) {
+        console.warn('Inquiry duplicate sync note:', inqErr);
+      }
+
+      setSubmittedOrder({
+        ...bespokePayload,
+        ...savedOrder,
+        id: generatedOrderId,
+        waUrl
+      });
+
+      try {
+        confetti({
+          particleCount: 70,
+          spread: 60,
+          origin: { y: 0.5 }
+        });
+      } catch {}
+
+      showToast(`Custom order #${generatedOrderId} placed! Opening WhatsApp...`, 'success');
+    } catch (err) {
+      console.error('Failed to save bespoke order:', err);
+      // Even if network drops, keep local confirmation so user can still chat
+      setSubmittedOrder({
+        ...bespokePayload,
+        id: generatedOrderId,
+        waUrl
+      });
+      showToast('Custom inquiry prepared! Direct WhatsApp link ready.', 'info');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleResetAndClose = () => {
-    setSubmittedInquiry(null);
+    setSubmittedOrder(null);
     setIsCustomOrderOpen(false);
     setFormData({
       name: '',
@@ -90,7 +190,7 @@ export const CustomOrderModal = () => {
           <X className="w-5 h-5" />
         </button>
 
-        {submittedInquiry ? (
+        {submittedOrder ? (
           <div className="p-6 sm:p-8 text-center space-y-4 my-auto overflow-y-auto">
             <div className="w-16 h-16 rounded-full bg-sage-50 text-sage-600 border border-sage-200 mx-auto flex items-center justify-center animate-bounce">
               <CheckCircle2 className="w-8 h-8" />
@@ -98,13 +198,13 @@ export const CustomOrderModal = () => {
             
             <div className="space-y-1">
               <span className="text-[11px] font-bold uppercase tracking-wider text-sage-700 bg-sage-50 px-3 py-1 rounded-full border border-sage-200 inline-block mb-1">
-                ✓ Inquiry Received
+                ✓ Custom Order Placed #{submittedOrder.id}
               </span>
               <h3 className="font-serif text-2xl font-bold text-walnut-900">
-                Your custom craft inquiry has been sent! We will contact you soon.
+                Your Bespoke Custom Craft Request is Ready!
               </h3>
               <p className="text-xs text-walnut-600 max-w-sm mx-auto leading-relaxed">
-                Thank you, <strong>{submittedInquiry.name}</strong>! An automated email notification has been dispatched to <strong>{ownerEmail}</strong>. Our studio team will call or message you on <strong>{submittedInquiry.phone}</strong> shortly!
+                Thank you, <strong>{submittedOrder.name}</strong>! Your bespoke custom order has been saved and registered under <strong>Admin Orders (#{submittedOrder.id})</strong>.
               </p>
             </div>
 
@@ -112,71 +212,64 @@ export const CustomOrderModal = () => {
             <div className="bg-cream-50/80 p-4 rounded-2xl border border-cream-200 text-left text-xs space-y-1.5 text-walnut-700">
               <div className="font-semibold text-walnut-900 border-b border-cream-200 pb-1 flex justify-between">
                 <span>{formData.craftType}</span>
-                <span className="text-terracotta-600">{formData.budget}</span>
+                <span className="text-terracotta-600 font-bold">{formData.budget}</span>
               </div>
-              <div><strong>Name:</strong> {submittedInquiry.name}</div>
-              <div><strong>Phone:</strong> {submittedInquiry.phone}</div>
-              {submittedInquiry.email && <div><strong>Email:</strong> {submittedInquiry.email}</div>}
+              <div className="flex justify-between">
+                <span><strong>Order Reference:</strong></span>
+                <span className="font-mono text-terracotta-600 font-bold">#{submittedOrder.id}</span>
+              </div>
+              <div><strong>Name:</strong> {submittedOrder.name}</div>
+              <div><strong>Phone / WhatsApp:</strong> {submittedOrder.phone}</div>
+              {submittedOrder.email && <div><strong>Email:</strong> {submittedOrder.email}</div>}
+              {formData.dateNeeded && <div><strong>Date Needed:</strong> {formData.dateNeeded}</div>}
               {formData.notes && (
-                <div className="pt-1 text-walnut-600 italic bg-white p-2 rounded-xl border border-cream-200">
+                <div className="pt-1 text-walnut-600 italic bg-white p-2.5 rounded-xl border border-cream-200">
                   "{formData.notes}"
                 </div>
               )}
             </div>
 
-            {/* Notification Badges */}
-            <div className="space-y-2 pt-1 text-left text-xs">
-              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-800 space-y-1">
-                <div className="flex items-center gap-2 font-semibold text-xs">
-                  <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>WhatsApp Query Prepared</span>
-                </div>
-                <p className="text-[11px] text-emerald-700 leading-tight">
-                  Ready to send to Studio WhatsApp ({contactInfo?.phone || '+91 98765 43210'}).
-                </p>
+            {/* Notification Badge */}
+            <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-800 text-left space-y-1">
+              <div className="flex items-center gap-2 font-semibold text-xs">
+                <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>WhatsApp Chat Prepared with All Details</span>
               </div>
-
-              <div className="p-3 bg-cream-50 rounded-2xl border border-cream-200 text-walnut-700 space-y-1">
-                <div className="flex items-center gap-2 font-semibold text-xs">
-                  <Mail className="w-4 h-4 text-terracotta-600 shrink-0" />
-                  <span>Email Notification Sent</span>
-                </div>
-                <p className="text-[11px] text-walnut-600 leading-tight">
-                  Dispatched to Owner (<strong>{ownerEmail}</strong>) and Customer Gmail (<strong>{submittedInquiry.email}</strong>).
-                </p>
-              </div>
+              <p className="text-[11px] text-emerald-700 leading-tight">
+                Your craft specifications, preferred date, and vision notes have been formatted for our studio WhatsApp (+91 6382091475).
+              </p>
             </div>
 
             {/* Action buttons */}
             <div className="space-y-2 pt-1">
-              {/* WhatsApp to Owner */}
+              {/* WhatsApp direct CTA */}
               <a
-                href={generateWhatsAppInquiryUrl(submittedInquiry, contactInfo?.phone || '+91 98765 43210')}
+                href={submittedOrder.waUrl || generateWhatsAppBespokeCustomOrderUrl(submittedOrder, ownerPhone)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-3 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-soft transition flex items-center justify-center gap-2"
+                className="w-full py-3.5 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-soft transition flex items-center justify-center gap-2 active:scale-95"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span>Send Custom Request on WhatsApp ({contactInfo?.phone || '+91 98765 43210'})</span>
+                <span>Chat on WhatsApp Directly (+91 6382091475)</span>
               </a>
 
               {/* Email to Owner */}
               <a
-                href={generateOwnerInquiryEmail(submittedInquiry, ownerEmail)}
+                href={generateOwnerInquiryEmail(submittedOrder, ownerEmail)}
                 className="w-full py-2.5 px-4 rounded-full bg-terracotta-50 hover:bg-terracotta-100 text-terracotta-800 font-medium text-xs border border-terracotta-200 transition flex items-center justify-center gap-2"
               >
                 <Mail className="w-4 h-4 text-terracotta-600" />
                 <span>Send Request Email to Owner ({ownerEmail})</span>
               </a>
 
-              {/* Confirmation to Customer */}
-              {submittedInquiry.email && (
+              {/* Confirmation to Customer if email provided */}
+              {submittedOrder.email && (
                 <a
-                  href={generateCustomerInquiryConfirmationEmail(submittedInquiry, ownerEmail)}
+                  href={generateCustomerInquiryConfirmationEmail(submittedOrder, ownerEmail)}
                   className="w-full py-2.5 px-4 rounded-full bg-cream-100 hover:bg-cream-200 text-walnut-800 font-medium text-xs border border-cream-300 transition flex items-center justify-center gap-2"
                 >
                   <Mail className="w-4 h-4 text-walnut-600" />
-                  <span>Send Confirmation to My Gmail ({submittedInquiry.email})</span>
+                  <span>Send Confirmation to My Gmail ({submittedOrder.email})</span>
                 </a>
               )}
 
@@ -313,10 +406,20 @@ export const CustomOrderModal = () => {
 
             <button
               type="submit"
-              className="w-full py-3 bg-terracotta-500 hover:bg-terracotta-600 text-white font-medium text-sm rounded-full shadow-soft flex items-center justify-center gap-2 transition active:scale-95"
+              disabled={isSubmitting}
+              className="w-full py-3.5 bg-terracotta-500 hover:bg-terracotta-600 disabled:opacity-50 text-white font-medium text-sm rounded-full shadow-soft flex items-center justify-center gap-2 transition active:scale-95"
             >
-              <Send className="w-4 h-4" />
-              <span>Submit Bespoke Inquiry</span>
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Submitting & Connecting to WhatsApp...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Submit Bespoke Inquiry</span>
+                </>
+              )}
             </button>
           </form>
         )}
@@ -324,4 +427,3 @@ export const CustomOrderModal = () => {
     </div>
   );
 };
-

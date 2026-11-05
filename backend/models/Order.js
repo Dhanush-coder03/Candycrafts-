@@ -38,6 +38,18 @@ const orderSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  craftType: {
+    type: String,
+    default: ''
+  },
+  budget: {
+    type: String,
+    default: ''
+  },
+  dateNeeded: {
+    type: String,
+    default: ''
+  },
   items: {
     type: [orderItemSchema],
     default: []

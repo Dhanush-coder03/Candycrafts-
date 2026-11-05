@@ -321,3 +321,40 @@ ${inquiry.phone ? `Phone: ${inquiry.phone}\n` : ''}Message: ${inquiry.message?.s
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
 };
 
+/**
+ * Generate direct WhatsApp URL for Bespoke Custom Craft Inquiry
+ * Routes customer directly to studio WhatsApp (+91 6382091475) with all their entered details:
+ * Name, Phone, Email, Creation Type, Estimated Budget, Date Needed, and Vision/Color notes.
+ */
+export const generateWhatsAppBespokeCustomOrderUrl = (data, phone = '+91 6382091475') => {
+  let cleanPhone = String(phone || '6382091475').replace(/[^0-9]/g, '');
+  if (cleanPhone.length === 10) {
+    cleanPhone = '91' + cleanPhone;
+  }
+  if (!cleanPhone) cleanPhone = '916382091475';
+
+  const orderId = data.orderId || data.id || `ORD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  const dateStr = new Date().toLocaleDateString('en-IN');
+
+  const text = `🌸 *CANDY CRAFTS - NEW BESPOKE CUSTOM CRAFT INQUIRY* 🌸
+
+• *Order ID:* #${orderId}
+• *Date:* ${dateStr}
+
+👤 *CUSTOMER CONTACT DETAILS:*
+• *Name:* ${data.name || data.customerName || 'Customer'}
+• *Phone / WhatsApp:* ${data.phone || data.customerPhone || 'Not provided'}
+${(data.email || data.customerEmail) ? `• *Gmail / Email:* ${data.email || data.customerEmail}\n` : ''}
+🎨 *BESPOKE CRAFT SPECIFICATIONS:*
+• *Creation Type:* ${data.craftType || 'Custom Handcrafted Floral Craft'}
+• *Estimated Budget:* ${data.budget || 'Custom Quote'}
+• *Date Needed:* ${data.dateNeeded || 'Flexible / As early as possible'}
+
+📝 *DESCRIBE YOUR VISION OR COLORS:*
+"${data.notes || data.message || 'Bespoke custom creation request'}"
+
+Hello Candy Crafts! I have submitted this bespoke custom craft request on your website. Please check and let me know about feasibility, design options, and next steps. Thank you!`;
+
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
+};
+
